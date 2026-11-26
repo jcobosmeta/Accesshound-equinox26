@@ -34,13 +34,15 @@ Do these 15 minutes before, on the machine you present from.
 | **3:05** | Click **Elena Navarro** (Peer outlier), then **Investigate**. | "Last one. Elena is the only engineer who can open the server room. A naive tool would say revoke." |
 | **3:30** | Point at **Keep**. | "The agent found a ticket approved by the CISO for datacentre on-call, valid until March 2027, so it recommends **keep**. It checks before it accuses anyone." |
 | **3:50** | Click **Approve: keep access**. | "Nothing changes, and the decision is still recorded." |
-| **4:05** | Click **Audit trail** at the top. | "Every decision: what the agent proposed, who approved it, and what actually changed. That's the evidence a NIS2 audit asks for. The server also writes it to a log file." |
+| **4:05** | Click **Audit trail** at the top, then **Download CSV**. | "Every decision: what the agent proposed, who approved it, and what actually changed. That's the evidence a NIS2 audit asks for, and here it is as a file you can hand an auditor." |
 | **4:30** | Back to **Findings**. Point at the three you didn't open. | "It also caught a backup account with domain-admin rights whose owner left, a clerk who can both create suppliers and approve payments, and a login from Lagos 19 minutes after a badge-in in Madrid." |
 | **4:45** | Nothing. | "Rules decide what looks wrong, so nothing is missed. The AI investigates and explains. A person always decides." |
 
 **Short on time?** Drop Javier: Marta, then Elena, then the audit trail still tells the whole story.
 
 **Saving time:** a finding's investigation keeps running when you switch to another one. While you're explaining Marta's proposal, you can click Javier and **Investigate**, then come back. By the time you need it, it's done.
+
+**Showing all six?** Click **Investigate all** above the findings list. It runs the agent on every open finding, 4 at a time with the rest shown as **Queued**, and all six are ready in about 20 seconds. Then walk through the proposals instead of waiting on each one. It's also a strong opening for a longer slot.
 
 ## If something goes wrong
 

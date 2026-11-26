@@ -64,6 +64,7 @@ server/src/
     live.ts         Claude agent (SDK tool runner); finishes by calling submit_proposal
     replay.ts       scripted agent that calls the same tools on the same data — no API key needed
   store.ts          in-memory state; applies approved actions; writes the audit trail (data/audit.jsonl)
+  audit-export.ts   the audit trail as CSV or JSON for download
   index.ts          Express API; also serves web/dist when it has been built
 
 web/src/
@@ -71,13 +72,14 @@ web/src/
   api.ts            typed API client; investigate() reads the agent's SSE stream
   present.tsx       labels, icons and colours for findings, statuses and decisions
   components/
-    FindingsList    findings by priority: needs a decision, then open, then decided
+    FindingsList    findings by priority: needs a decision, then open, then decided;
+                    "Investigate all" queues every open finding, 4 investigations at a time
     FindingDetail   rule facts, access map, agent investigation and proposal for one finding
     AccessGraph     person → groups → entitlements in three columns; flagged paths in red,
                     revoked paths dashed after approval; stacks vertically on mobile
     AgentTrace      the agent's steps as they stream in: why, which lookup, what came back
     ProposalCard    the recommendation, evidence and planned changes; approve or reject
-    AuditTrail      every decision and what it changed
+    AuditTrail      every decision and what it changed, with CSV and JSON download
 ```
 
 - **Detection is deterministic and investigation is AI.** The rules decide what looks wrong, so a planted case is never missed. The agent verifies each finding, explains it and proposes `revoke`, `keep` or `escalate`.
@@ -133,6 +135,7 @@ It checks each proposal against the expected outcome for the planted case: the d
 | POST | `/api/findings/:id/decision` | Body `{ "decision": "approved" \| "rejected", "reviewer": "...", "note": "..." }`. Applies the actions and writes to the audit trail |
 | GET | `/api/principals/:id` | A person or service account's profile and every access path (entitlement ← group ← membership), for the graph |
 | GET | `/api/audit` | The audit trail |
+| GET | `/api/audit/export?format=csv\|json` | The audit trail as a file download: CSV for spreadsheets (opens correctly in Excel), or JSON |
 | POST | `/api/reset` | Restores the demo data and clears proposals and the audit trail |
 
 ## Status
