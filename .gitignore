@@ -5,3 +5,4 @@ dist/
 server/data/audit.jsonl
 *.log
 .DS_Store
+!.env.example
