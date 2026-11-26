@@ -17,7 +17,7 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
    - risky combinations, like "creates suppliers and approves payments"
    - a badge swipe in Madrid at the same time as a VPN login from abroad
 3. **Investigate.** For each finding, an agent uses tools to check the HR record, group memberships and badge log, then explains it in plain language:
-   *"Marta moved from Finance to Marketing in March and still has SAP payment approval."*
+   *"Patricia moved from Marketing to Design in March and still has Marketing's Firebase access."*
 4. **Decide.** The agent proposes **revoke** or **keep**. A human approves or rejects it, and every decision is written to an audit trail, ready for NIS2.
 
 ```
@@ -33,19 +33,17 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
 
 ## Demo scenario
 
-A fake company of about 40 people, with 5 planted access problems:
+A fake company of 24 people, with 3 planted access problems:
 
 | # | Problem | What gives it away |
 |---|---------|--------------------|
-| 1 | Role-change leftover | Moved from Finance to Marketing and still has SAP payment approval |
-| 2 | Leaver's badge | Left the company, and the badge still opens the server room |
-| 3 | Orphaned service account | Its owner is gone and it still has admin rights |
-| 4 | Toxic combination | Can both create suppliers and approve payments |
-| 5 | Impossible travel | Badge swipe in Madrid while the VPN login comes from abroad |
+| 1 | Role-change leftover | Moved from Marketing to Design and still has Marketing's Firebase access |
+| 2 | Toxic combination | Can administer both Firebase and Azure (separation of duties) |
+| 3 | Impossible travel | Badge swipe in Madrid while the VPN login comes from abroad |
 
-The 5-minute demo runs on that data end to end. AccessHound maps the access and flags the five problems. The agent investigates each one and explains it. A person approves or rejects each proposal, and the audit trail fills in.
+The 5-minute demo runs on that data end to end. AccessHound maps the access and flags the three problems. The agent investigates each one and explains it. A person approves or rejects each proposal, and the audit trail fills in.
 
-There is also a sixth, decoy case: Elena, an engineer, has server-room access that none of her peers have. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
+There is also a fourth, decoy case: Marcos, on the AI team, has a Descodificador DEMO that none of their peers have. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
 
 ## Architecture
 
@@ -55,7 +53,7 @@ TypeScript throughout. The UI is React built on [Mística](https://github.com/te
 server/src/
   data/
     types.ts        domain model: people, service accounts, groups, entitlements, HR events, tickets, badge + login logs
-    company.ts      the demo company (40 people, deterministic) with the planted cases
+    company.ts      the demo company (24 people, deterministic) with the planted cases
     repo.ts         read-only queries shared by detectors, agent tools and API
   detectors/        rule-based: leaver access, orphaned service account, role-change leftover,
                     separation-of-duties, impossible travel, peer outlier

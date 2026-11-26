@@ -1,7 +1,7 @@
 // Domain model for AccessHound. Everything the detectors and the agent see
 // comes from a `Company` snapshot built from these types.
 
-export type Department = "Finanzas" | "Marketing" | "TI" | "Ingeniería";
+export type Department = "Marketing" | "Diseño" | "TI" | "Ingeniería" | "IA" | "Innovación";
 
 export type Risk = "low" | "medium" | "high";
 
@@ -16,6 +16,7 @@ export interface Person {
   startDate: string; // ISO date
   endDate?: string; // ISO date, set when status === "left"
   homeOffice: string; // e.g. "Sede de Madrid"
+  avatarUrl?: string;
 }
 
 export interface ServiceAccount {
@@ -106,6 +107,8 @@ export interface SodRule {
 
 export interface Company {
   name: string;
+  /** Demo only: fixed value shown as the company-wide average risk instead of the computed one. */
+  displayRisk?: number;
   asOf: string; // ISO date the snapshot represents
   people: Person[];
   serviceAccounts: ServiceAccount[];

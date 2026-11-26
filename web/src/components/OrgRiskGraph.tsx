@@ -20,6 +20,20 @@ import * as React from "react";
 import type { Finding, GraphEdge, GraphEdgeKind, GraphNode, OrgGraph, Summary } from "../api";
 import { departmentAccent, initials, scorePalette } from "../present";
 
+/** Photo clipped to a circle, drawn over the initials (which remain as fallback if the image fails to load). */
+const NodeFace = ({ node, cx, cy, r }: { node: GraphNode; cx: number; cy: number; r: number }) => {
+  if (!node.avatarUrl) return null;
+  const clipId = `face-${node.id}-${r}`;
+  return (
+    <>
+      <clipPath id={clipId}>
+        <circle cx={cx} cy={cy} r={r} />
+      </clipPath>
+      <image href={node.avatarUrl} x={cx - r} y={cy - r} width={2 * r} height={2 * r} clipPath={`url(#${clipId})`} preserveAspectRatio="xMidYMid slice" />
+    </>
+  );
+};
+
 type LayoutMode = "radial" | "hierarchy";
 type FilterMode = "all" | "flagged" | "elevated";
 
@@ -53,7 +67,7 @@ interface SectorLabel {
   flaggedCount: number;
 }
 
-const DEPT_ORDER = ["Finanzas", "Marketing", "Ingeniería", "TI"];
+const DEPT_ORDER = ["Ingeniería", "IA", "Innovación"];
 
 // Hierarchy layout constants
 const H_OUTER_X = 40;
@@ -81,18 +95,57 @@ function truncate(text: string, max: number) {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+interface OrgGroup {
+  dept: string;
+  head?: GraphNode;
+  /** Everyone below the head (or the loose, manager-less people), depth-first, with their depth. */
+  members: { node: GraphNode; depth: number }[];
+}
+
+function servicesByOwnerOf(graph: OrgGraph) {
+  const map = new Map<string, GraphNode[]>();
+  for (const n of graph.nodes) {
+    if (n.kind === "service" && n.managerId) map.set(n.managerId, [...(map.get(n.managerId) ?? []), n]);
+  }
+  return map;
+}
+
+/** Heads (people with reports) get a group each; managerless people without reports share a "Transversal" one. */
+function buildGroups(graph: OrgGraph, servicesByOwner: Map<string, GraphNode[]>): OrgGroup[] {
+  const people = graph.nodes.filter((n) => n.kind === "person");
+  const ownsFlag = (n: GraphNode) => ((servicesByOwner.get(n.id) ?? []).some((s) => s.topFindingSeverity) ? 1 : 0);
+  const cmp = (a: GraphNode, b: GraphNode) =>
+    Number(Boolean(b.topFindingSeverity)) - Number(Boolean(a.topFindingSeverity)) ||
+    ownsFlag(b) - ownsFlag(a) ||
+    b.riskScore - a.riskScore ||
+    a.name.localeCompare(b.name);
+  const walk = (id: string, depth: number): OrgGroup["members"] =>
+    people
+      .filter((n) => n.managerId === id)
+      .sort(cmp)
+      .flatMap((node) => [{ node, depth }, ...walk(node.id, depth + 1)]);
+
+  const top = people.filter((n) => n.managerId === "org-root");
+  const heads = top.filter((n) => people.some((p) => p.managerId === n.id));
+  const rank = (d: string) => (DEPT_ORDER.includes(d) ? DEPT_ORDER.indexOf(d) : DEPT_ORDER.length);
+  const groups: OrgGroup[] = [...heads]
+    .sort((a, b) => rank(a.department) - rank(b.department))
+    .map((head) => ({ dept: head.department, head, members: walk(head.id, 0) }));
+
+  const loose = top.filter((n) => !heads.includes(n)).sort(cmp);
+  if (loose.length) groups.push({ dept: "Transversal", members: loose.map((node) => ({ node, depth: 0 })) });
+  return groups;
+}
+
 function computeHierarchyLayout(graph: OrgGraph) {
   const positions = new Map<string, NodePos>();
   const columns: ColumnFrame[] = [];
 
   const root = graph.nodes.find((n) => n.kind === "org");
-  const heads = graph.nodes.filter((n) => n.kind === "person" && n.managerId === "org-root");
-  const orderedDepts = [
-    ...DEPT_ORDER.filter((d) => heads.some((h) => h.department === d)),
-    ...heads.map((h) => h.department).filter((d) => !DEPT_ORDER.includes(d)),
-  ];
+  const servicesByOwner = servicesByOwnerOf(graph);
+  const groups = buildGroups(graph, servicesByOwner);
 
-  const totalW = H_OUTER_X * 2 + orderedDepts.length * H_COL_W + Math.max(0, orderedDepts.length - 1) * H_COL_GAP;
+  const totalW = H_OUTER_X * 2 + groups.length * H_COL_W + Math.max(0, groups.length - 1) * H_COL_GAP;
   let maxBottom = H_FIRST_CHILD_Y + 200;
 
   if (root) {
@@ -107,50 +160,31 @@ function computeHierarchyLayout(graph: OrgGraph) {
     });
   }
 
-  const servicesByOwner = new Map<string, GraphNode[]>();
-  for (const n of graph.nodes) {
-    if (n.kind === "service" && n.managerId) {
-      const list = servicesByOwner.get(n.managerId) ?? [];
-      list.push(n);
-      servicesByOwner.set(n.managerId, list);
-    }
-  }
-
-  orderedDepts.forEach((dept, colIdx) => {
+  groups.forEach(({ dept, head, members }, colIdx) => {
     const colX = H_OUTER_X + colIdx * H_COL_STEP;
-    const head = heads.find((h) => h.department === dept);
-    if (!head) return;
+    const colMembers: GraphNode[] = [];
 
-    const headX = colX + 16;
-    positions.set(head.id, {
-      x: headX,
-      y: H_HEAD_Y,
-      w: H_CARD_W,
-      h: H_CARD_H,
-      cx: headX + H_CARD_W / 2,
-      cy: H_HEAD_Y + H_CARD_H / 2,
-      col: colIdx,
-    });
-
-    const reports = graph.nodes
-      .filter((n) => n.kind === "person" && n.managerId === head.id)
-      .sort((a, b) => {
-        const aFlag = a.topFindingSeverity ? 1 : 0;
-        const bFlag = b.topFindingSeverity ? 1 : 0;
-        if (bFlag !== aFlag) return bFlag - aFlag;
-        const aOwnsFlag = (servicesByOwner.get(a.id) ?? []).some((s) => s.topFindingSeverity) ? 1 : 0;
-        const bOwnsFlag = (servicesByOwner.get(b.id) ?? []).some((s) => s.topFindingSeverity) ? 1 : 0;
-        if (bOwnsFlag !== aOwnsFlag) return bOwnsFlag - aOwnsFlag;
-        return b.riskScore - a.riskScore || a.name.localeCompare(b.name);
+    if (head) {
+      const headX = colX + 16;
+      positions.set(head.id, {
+        x: headX,
+        y: H_HEAD_Y,
+        w: H_CARD_W,
+        h: H_CARD_H,
+        cx: headX + H_CARD_W / 2,
+        cy: H_HEAD_Y + H_CARD_H / 2,
+        col: colIdx,
       });
+      colMembers.push(head);
+    }
 
-    let rowY = H_FIRST_CHILD_Y;
-    const colMembers: GraphNode[] = [head];
+    let rowY = head ? H_FIRST_CHILD_Y : H_HEAD_Y;
 
-    for (const rep of reports) {
-      const rx = colX + 22;
-      const rw = H_CARD_W - 6;
-      positions.set(rep.id, {
+    for (const { node, depth } of members) {
+      const indent = depth * 18;
+      const rx = colX + 22 + indent;
+      const rw = H_CARD_W - 6 - indent;
+      positions.set(node.id, {
         x: rx,
         y: rowY,
         w: rw,
@@ -159,17 +193,17 @@ function computeHierarchyLayout(graph: OrgGraph) {
         cy: rowY + H_CARD_H / 2,
         col: colIdx,
       });
-      colMembers.push(rep);
+      colMembers.push(node);
       rowY += H_ROW_STEP;
 
-      for (const svc of servicesByOwner.get(rep.id) ?? []) {
-        const sx = colX + 36;
+      for (const svc of servicesByOwner.get(node.id) ?? []) {
+        const sx = colX + 36 + indent;
         positions.set(svc.id, {
           x: sx,
           y: rowY - 4,
-          w: H_SVC_W - 4,
+          w: H_SVC_W - 4 - indent,
           h: H_SVC_H,
-          cx: sx + (H_SVC_W - 4) / 2,
+          cx: sx + (H_SVC_W - 4 - indent) / 2,
           cy: rowY - 4 + H_SVC_H / 2,
           col: colIdx,
         });
@@ -206,24 +240,12 @@ function computeRadialLayout(graph: OrgGraph) {
     positions.set(root.id, { x: R_CX - 54, y: R_CY - 54, w: 108, h: 108, cx: R_CX, cy: R_CY });
   }
 
-  const heads = graph.nodes.filter((n) => n.kind === "person" && n.managerId === "org-root");
-  const orderedHeads = [
-    ...DEPT_ORDER.map((d) => heads.find((h) => h.department === d)).filter((h): h is GraphNode => Boolean(h)),
-    ...heads.filter((h) => !DEPT_ORDER.includes(h.department)),
-  ];
+  const servicesByOwner = servicesByOwnerOf(graph);
+  const groups = buildGroups(graph, servicesByOwner);
 
-  const servicesByOwner = new Map<string, GraphNode[]>();
-  for (const n of graph.nodes) {
-    if (n.kind === "service" && n.managerId) {
-      const list = servicesByOwner.get(n.managerId) ?? [];
-      list.push(n);
-      servicesByOwner.set(n.managerId, list);
-    }
-  }
-
-  const count = Math.max(1, orderedHeads.length);
-  const sweep = (Math.PI * 2) / count;
-  let cursor = -Math.PI;
+  // Wider arcs for bigger groups so the nodes do not pile up.
+  const weights = groups.map((g) => Math.max(3, g.members.length + 1));
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
 
   const cornerAnchors: { x: number; y: number; align: "start" | "end" }[] = [
     { x: 34, y: 40, align: "start" },
@@ -232,35 +254,33 @@ function computeRadialLayout(graph: OrgGraph) {
     { x: 34, y: R_H - 36, align: "start" },
   ];
 
-  orderedHeads.forEach((head, idx) => {
+  let cursor = -Math.PI;
+
+  groups.forEach(({ dept, head, members }, idx) => {
+    const sweep = (Math.PI * 2 * weights[idx]!) / totalWeight;
     const mid = cursor + sweep / 2;
-    const headRx = 185;
-    const headRy = 148;
-    const hx = R_CX + Math.cos(mid) * headRx;
-    const hy = R_CY + Math.sin(mid) * headRy;
+    const sectorMembers: GraphNode[] = [];
 
-    positions.set(head.id, { x: hx - 28, y: hy - 28, w: 56, h: 56, cx: hx, cy: hy, col: idx, angle: mid });
+    if (head) {
+      const hx = R_CX + Math.cos(mid) * 185;
+      const hy = R_CY + Math.sin(mid) * 148;
+      positions.set(head.id, { x: hx - 28, y: hy - 28, w: 56, h: 56, cx: hx, cy: hy, col: idx, angle: mid });
+      sectorMembers.push(head);
+    }
 
-    const reports = graph.nodes
-      .filter((n) => n.kind === "person" && n.managerId === head.id)
-      .sort((a, b) => b.riskScore - a.riskScore || a.name.localeCompare(b.name));
-
-    const pad = sweep * 0.16;
+    const pad = sweep * 0.12;
     const usable = Math.max(0.1, sweep - pad * 2);
-    const sectorMembers: GraphNode[] = [head];
 
-    reports.forEach((rep, rIdx) => {
-      const t = reports.length === 1 ? 0.5 : rIdx / (reports.length - 1);
+    members.forEach(({ node }, rIdx) => {
+      const t = members.length === 1 ? 0.5 : rIdx / (members.length - 1);
       const angle = cursor + pad + t * usable;
-      const stagger = reports.length >= 4 && rIdx % 2 === 1 ? 1.08 : 0.96;
-      const repRx = 395 * stagger;
-      const repRy = 290 * stagger;
-      const rx = R_CX + Math.cos(angle) * repRx;
-      const ry = R_CY + Math.sin(angle) * repRy;
-      positions.set(rep.id, { x: rx - 24, y: ry - 24, w: 48, h: 48, cx: rx, cy: ry, col: idx, angle });
-      sectorMembers.push(rep);
+      const stagger = members.length >= 4 && rIdx % 2 === 1 ? 1.08 : 0.96;
+      const rx = R_CX + Math.cos(angle) * 395 * stagger;
+      const ry = R_CY + Math.sin(angle) * 290 * stagger;
+      positions.set(node.id, { x: rx - 24, y: ry - 24, w: 48, h: 48, cx: rx, cy: ry, col: idx, angle });
+      sectorMembers.push(node);
 
-      const svcs = servicesByOwner.get(rep.id) ?? [];
+      const svcs = servicesByOwner.get(node.id) ?? [];
       svcs.forEach((svc, sIdx) => {
         const sAngle = angle + (sIdx - (svcs.length - 1) / 2) * 0.12;
         const sx = Math.max(84, Math.min(R_W - 84, rx + Math.cos(sAngle) * 116));
@@ -277,14 +297,7 @@ function computeRadialLayout(graph: OrgGraph) {
       y: R_CY + Math.sin(mid) * 350,
       align: Math.cos(mid) >= 0 ? ("end" as const) : ("start" as const),
     };
-    sectors.push({
-      dept: head.department,
-      x: anchor.x,
-      y: anchor.y,
-      align: anchor.align,
-      avgRisk,
-      flaggedCount,
-    });
+    sectors.push({ dept, x: anchor.x, y: anchor.y, align: anchor.align, avgRisk, flaggedCount });
 
     cursor += sweep;
   });
@@ -950,7 +963,7 @@ export function OrgRiskGraph({
 
                 // RADIAL RISK MAP NODE
                 if (layout === "radial") {
-                  const isHead = node.managerId === "org-root";
+                  const isHead = node.managerId === "org-root" && graph.nodes.some((n) => n.managerId === node.id && n.kind === "person");
                   const isSvc = node.kind === "service";
                   const r = isHead ? 27 : isSvc ? 21 : 23;
                   const ringR = r + 5;
@@ -1013,6 +1026,7 @@ export function OrgRiskGraph({
                       >
                         {isSvc ? "SVC" : initials(node.name)}
                       </text>
+                      <NodeFace node={node} cx={pos.cx} cy={pos.cy} r={r - 2} />
 
                       {!isActiveFlagged && (status === "approved" || status === "resolved") && (
                         <circle cx={pos.cx + r - 3} cy={pos.cy - r + 3} r={5} fill="#10B981" stroke="#090D16" strokeWidth={1.6} />
@@ -1108,6 +1122,7 @@ export function OrgRiskGraph({
                     >
                       {isSvc ? "SVC" : initials(node.name)}
                     </text>
+                    <NodeFace node={node} cx={pos.x + 25} cy={pos.cy} r={15} />
 
                     {isActiveFlagged ? (
                       <circle cx={pos.x + 36} cy={pos.cy - 11} r={4.5} fill={pal.stroke} stroke="#0B1120" strokeWidth={1.5} className="ah-risk-pulse" />

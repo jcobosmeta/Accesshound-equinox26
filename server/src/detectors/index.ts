@@ -164,7 +164,7 @@ export function detect(repo: Repo): Finding[] {
   // 6. High-risk access none of your peers have -------------------------------
   for (const p of c.people.filter((x) => x.status === "active")) {
     const peers = repo.activePeers(p);
-    if (peers.length < 3) continue;
+    if (peers.length < 2) continue;
     const seen = new Set<string>();
     for (const a of repo.accessOf(p.id)) {
       const ent = a.entitlement;

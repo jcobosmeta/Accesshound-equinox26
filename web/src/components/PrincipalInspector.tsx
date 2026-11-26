@@ -405,7 +405,7 @@ export function PrincipalInspector({
             <Inline space="between" alignItems="center" wrap verticalSpace={16}>
               <Inline space={16} alignItems="center" wrap verticalSpace={8}>
                 {detail.kind === "person" ? (
-                  <Avatar size={48} initials={initials(detail.profile.name)} />
+                  <Avatar size={48} src={detail.profile.avatarUrl} initials={initials(detail.profile.name)} />
                 ) : (
                   <Avatar size={48} Icon={IconRobotRegular} />
                 )}
