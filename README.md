@@ -45,6 +45,64 @@ A fake company of about 40 people, with 5 planted access problems:
 
 The 5-minute demo runs on that data end to end. AccessHound maps the access and flags the five problems. The agent investigates each one and explains it. A person approves or rejects each proposal, and the audit trail fills in.
 
+There is also a sixth, decoy case: Elena, an engineer, has server-room access that none of her peers have. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
+
+## Architecture
+
+TypeScript throughout. The UI will be React built on [Mística](https://github.com/telefonica/mistica-web), so one language covers everything.
+
+```
+server/src/
+  data/
+    types.ts        domain model: people, service accounts, groups, entitlements, HR events, tickets, badge + login logs
+    company.ts      the demo company (40 people, deterministic) with the planted cases
+    repo.ts         read-only queries shared by detectors, agent tools and API
+  detectors/        rule-based: leaver access, orphaned service account, role-change leftover,
+                    separation-of-duties, impossible travel, peer outlier
+  agent/
+    tools.ts        read-only lookup tools the agent can call
+    live.ts         Claude agent (SDK tool runner); finishes by calling submit_proposal
+    replay.ts       scripted agent that calls the same tools on the same data — no API key needed
+  store.ts          in-memory state; applies approved actions; writes the audit trail (data/audit.jsonl)
+  index.ts          Express API
+```
+
+- **Detection is deterministic and investigation is AI.** The rules decide what looks wrong, so a planted case is never missed. The agent verifies each finding, explains it and proposes `revoke`, `keep` or `escalate`.
+- **The agent can't change anything.** All its tools are read-only. Access changes only when a human approves a proposal. Approving actually changes the data, so a finding that's been fixed disappears on re-detection.
+- **Replay mode is the demo's safety net.** If there's no API key, or the live call fails, the agent falls back to replay. Replay runs the real tools, so the evidence on screen is still real.
+
+## Running it
+
+Requires Node 22+.
+
+```bash
+npm install
+```
+
+```bash
+npm run dev          # API on http://localhost:8787 (auto-reloads)
+```
+
+```bash
+npm run detect       # print the findings to the terminal
+```
+
+Set `ANTHROPIC_API_KEY` to use the live agent. Without it, everything runs in replay mode. The other settings are in [`.env.example`](.env.example).
+
+## API
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/api/summary` | Company name, counts and the default agent mode |
+| GET | `/api/findings` | All findings with `status` (`open`, `investigating`, `proposed`, `approved`, `rejected`, `resolved`) and the proposal, if there is one |
+| GET | `/api/findings/:id/investigate?mode=live\|replay` | Runs the agent and streams Server-Sent Events: `status`, `text`, `tool_call`, `tool_result`, `proposal`, `error`, `done` |
+| POST | `/api/findings/:id/decision` | Body `{ "decision": "approved" \| "rejected", "reviewer": "...", "note": "..." }`. Applies the actions and writes to the audit trail |
+| GET | `/api/principals/:id` | A person or service account's profile and every access path (entitlement ← group ← membership), for the graph |
+| GET | `/api/audit` | The audit trail |
+| POST | `/api/reset` | Restores the demo data and clears proposals and the audit trail |
+
 ## Status
 
-🚧 Just started. Stack and repo layout to come.
+- [x] Demo data, detectors, agent (live and replay), API, audit trail
+- [ ] UI: findings list, access graph, live agent trace, approve/reject, audit trail
+- [ ] Try the live agent with a real API key
