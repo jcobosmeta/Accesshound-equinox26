@@ -45,18 +45,6 @@ A fake company of about 40 people, with 5 planted access problems:
 
 The 5-minute demo runs on that data end to end. AccessHound maps the access and flags the five problems. The agent investigates each one and explains it. A person approves or rejects each proposal, and the audit trail fills in.
 
-## Hackathon
-
-Built for **Equinox: Solstice Edition**, a 24-hour hackathon held 26–27 Nov 2026.
-
-- **Submission deadline:** 27 Nov, 10:30
-- **Pitch:** 5 minutes per team
-- **Prizes we're aiming for:** Number One, Best Cybersecurity, Best AI, B2A (best agent-based project)
-
-**Plan:** have the demo working end to end on fake data by about 02:00. Use the rest of the time for polish and for rehearsing the pitch.
-
-If time runs short, cut back to the core: fake company, 5 planted problems, the agent's findings and the approve button.
-
 ## Status
 
 🚧 Just started. Stack and repo layout to come.
