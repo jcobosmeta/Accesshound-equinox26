@@ -1,6 +1,7 @@
-import { EmptyStateCard, Inline, Stack, Table, Tag, Text1, Text2, Title2, skinVars } from "@telefonica/mistica";
+import { ButtonSecondary, EmptyStateCard, Inline, Stack, Table, Tag, Text1, Text2, Title2, skinVars } from "@telefonica/mistica";
+import IconDownloadRegular from "@telefonica/mistica-icons/icon-download-regular";
 import IconListDocumentRegular from "@telefonica/mistica-icons/icon-list-document-regular";
-import type { AuditEntry } from "../api";
+import { api, type AuditEntry } from "../api";
 import { DecisionTag, ModeTag, formatTime } from "../present";
 
 const Secondary = ({ children }: { children: string }) => (
@@ -13,13 +14,24 @@ const Secondary = ({ children }: { children: string }) => (
 export function AuditTrail({ entries }: { entries: AuditEntry[] }) {
   return (
     <Stack space={16}>
-      <Stack space={4}>
-        <Title2 as="h2">Audit trail</Title2>
-        <Text2 regular color={skinVars.colors.textSecondary}>
-          What the agent proposed, what a person decided and what actually changed. The server also appends each entry to
-          data/audit.jsonl.
-        </Text2>
-      </Stack>
+      <Inline space="between" alignItems="flex-end" wrap verticalSpace={16}>
+        <Stack space={4}>
+          <Title2 as="h2">Audit trail</Title2>
+          <Text2 regular color={skinVars.colors.textSecondary}>
+            What the agent proposed, what a person decided and what actually changed. The server also appends each entry to
+            data/audit.jsonl.
+          </Text2>
+        </Stack>
+        {/* The server sends these as attachments, so the browser downloads them and stays on the page. */}
+        <Inline space={8}>
+          <ButtonSecondary small StartIcon={IconDownloadRegular} href={api.auditExportUrl("csv")} disabled={!entries.length}>
+            Download CSV
+          </ButtonSecondary>
+          <ButtonSecondary small StartIcon={IconDownloadRegular} href={api.auditExportUrl("json")} disabled={!entries.length}>
+            Download JSON
+          </ButtonSecondary>
+        </Inline>
+      </Inline>
       {entries.length === 0 ? (
         <EmptyStateCard
           asset={<IconListDocumentRegular size="100%" color={skinVars.colors.brand} />}
