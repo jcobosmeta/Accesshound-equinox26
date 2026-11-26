@@ -2,15 +2,15 @@
 // strictly using the configured services:
 //   Firebase, Confluence, SharePoint, Jira,
 //   VPN (General, DEMO, Laboratorio, Full),
-//   Azure, Móvil Trabajo, Descodificador DEMO.
+//   Azure, Móvil Trabajo, Descodificador.
 //
 // Six planted cases:
 //   1. Marta Ruiz        — moved Finance → Marketing in March, still holds Finance Azure & Jira access
-//   2. Javier Ortega     — left in September; still has Azure, VPN Full, VPN Laboratorio & Descodificador DEMO (used at night)
+//   2. Javier Ortega     — left in September; still has Azure, VPN Full, VPN Laboratorio & Descodificador (used at night)
 //   3. svc-backup-legacy — owner left in 2025; still holds Azure, VPN Full & VPN Laboratorio, still logging in
 //   4. Lucía Fernández   — toxic combination: holds both Firebase AND Azure (expired "temporary" cover)
 //   5. Carlos Méndez     — Móvil Trabajo check-in in Madrid while VPN General logs in from Lagos, 19 minutes apart
-//   6. Elena Navarro     — DECOY: Descodificador DEMO access none of her peers have, backed by a
+//   6. Elena Navarro     — DECOY: Descodificador access none of her peers have, backed by a
 //                          valid CISO-approved ticket. The agent should propose KEEP.
 //
 // Everything is deterministic so the demo plays the same way every time.
@@ -47,7 +47,7 @@ const entitlements: Entitlement[] = [
 
   { id: "ent-firebase", system: "Firebase", name: "Firebase", description: "Consola de Firebase y control de la base de datos de producción", risk: "high", physical: false, duties: ["prod_data_admin"] },
   { id: "ent-azure", system: "Azure", name: "Azure", description: "Suscripciones de Azure, facturación y administración de IAM", risk: "high", physical: false, duties: ["cloud_iam_admin"] },
-  { id: "ent-descodificador-demo", system: "Dispositivo", name: "Descodificador DEMO", description: "Descodificador DEMO para entornos de pruebas", risk: "high", physical: true },
+  { id: "ent-descodificador-demo", system: "Dispositivo", name: "Descodificador", description: "Descodificador para entornos de pruebas", risk: "high", physical: true },
 ];
 
 // ---------------------------------------------------------------- groups (8)
@@ -59,10 +59,10 @@ const groups: Group[] = [
   { id: "g-fin-firebase", name: "Firebase de Finanzas", source: "SaaS", department: "Finanzas", entitlementIds: ["ent-firebase"] },
   { id: "g-fin-cloud", name: "Azure de Finanzas", source: "SaaS", department: "Finanzas", entitlementIds: ["ent-azure"] },
 
-  { id: "g-mkt-staff", name: "Marketing DEMO", source: "SaaS", department: "Marketing", entitlementIds: ["ent-vpn-demo"] },
+  { id: "g-mkt-staff", name: "Marketing", source: "SaaS", department: "Marketing", entitlementIds: ["ent-vpn-demo"] },
 
   { id: "g-it-admins", name: "Administradores de TI", source: "Active Directory", department: "TI", entitlementIds: ["ent-azure", "ent-vpn-full", "ent-vpn-lab"] },
-  { id: "g-demo-lab", name: "Descodificador DEMO", source: "Devices", entitlementIds: ["ent-descodificador-demo"] },
+  { id: "g-demo-lab", name: "Descodificadores", source: "Devices", entitlementIds: ["ent-descodificador-demo"] },
 
   { id: "g-eng-staff", name: "Plataforma de Ingeniería", source: "SaaS", department: "Ingeniería", entitlementIds: ["ent-jira", "ent-firebase", "ent-vpn-demo"] },
 ];
@@ -147,7 +147,7 @@ for (const id of ["p-010", "p-011"]) grant(id, "g-fin-firebase", people.find((p)
 grant("p-001", "g-fin-cloud", "2018-02-01");
 grant("p-012", "g-fin-cloud", "2019-11-18");
 
-// IT roles: sysadmins hold Azure + VPN Full + VPN Laboratorio + Descodificador DEMO.
+// IT roles: sysadmins hold Azure + VPN Full + VPN Laboratorio + Descodificador.
 for (const id of ["p-030", "p-031", "p-032"]) {
   const start = people.find((p) => p.id === id)!.startDate;
   grant(id, "g-it-admins", start);
@@ -163,7 +163,7 @@ grant("p-020", "g-mkt-staff", "2026-03-02");
 // Case 4 — Lucía Fernández: holds Firebase (normal) AND Azure (temporary cover expired).
 grant("p-010", "g-fin-cloud", "2025-08-01", "TCK-2025-0318");
 
-// Case 6 (decoy) — Elena Navarro: SRE with Descodificador DEMO access approved by CISO.
+// Case 6 (decoy) — Elena Navarro: SRE with Descodificador access approved by CISO.
 grant("p-040", "g-demo-lab", "2026-04-15", "TCK-2026-0412");
 
 // Case 3 — svc-backup-legacy: Azure + VPN Full + VPN Laboratorio since 2019, owner left in 2025.
@@ -207,7 +207,7 @@ const tickets: AccessTicket[] = [
     entitlementId: "ent-descodificador-demo",
     requestedBy: "p-004",
     approvedBy: "CISO (Gonzalo Martín)",
-    justification: "Entra en la guardia de dispositivos DEMO; necesita un Descodificador DEMO para incidencias en directo.",
+    justification: "Entra en la guardia de dispositivos de pruebas; necesita un Descodificador para incidencias en directo.",
     approvedDate: "2026-04-15",
     expiresDate: "2027-03-31",
   },
@@ -239,11 +239,11 @@ for (const p of people.filter((x) => x.status === "active")) {
   }
 }
 
-// Sysadmins and the decoy access Descodificador DEMO from time to time.
+// Sysadmins and the decoy access Descodificador from time to time.
 badgeEvents.push({ personId: "p-031", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-19T11:05:00+01:00", ...MADRID, result: "granted" });
 badgeEvents.push({ personId: "p-040", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-21T03:12:00+01:00", ...MADRID, result: "granted" });
 
-// Case 2 — Javier Ortega left on 2026-09-30, but his Móvil Trabajo & Descodificador DEMO were used at night.
+// Case 2 — Javier Ortega left on 2026-09-30, but his Móvil Trabajo & Descodificador were used at night.
 badgeEvents.push({ personId: "p-030", doorEntitlementId: "ent-movil-trabajo", time: "2026-11-14T22:41:00+01:00", ...MADRID, result: "granted" });
 badgeEvents.push({ personId: "p-030", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-14T22:47:00+01:00", ...MADRID, result: "granted" });
 

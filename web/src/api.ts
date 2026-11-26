@@ -239,6 +239,93 @@ export type AgentEvent =
   | { type: "error"; message: string }
   | { type: "done" };
 
+// ---- Real-time monitoring (server/src/monitor.ts) ----
+
+export type AlertSeverity = "low" | "medium" | "high" | "critical";
+export type AlertKind =
+  | "impossible_travel"
+  | "mass_download"
+  | "mfa_fatigue"
+  | "malware"
+  | "credential_leak"
+  | "off_hours_badge"
+  | "privilege_escalation"
+  | "tor_login"
+  | "new_device";
+export type MonitorEngine = "script" | "ia";
+export type MonitorAction = "block" | "watch" | "ignore";
+
+export interface SecurityAlert {
+  id: string;
+  time: string;
+  principalId: string;
+  principalName: string;
+  kind: AlertKind;
+  source: string;
+  severity: AlertSeverity;
+  title: string;
+  detail: string;
+}
+
+export interface MonitorDecision {
+  action: MonitorAction;
+  reason: string;
+  engine: MonitorEngine;
+  confidence: "low" | "medium" | "high";
+  fallback?: string;
+}
+
+export interface MonitorEvent {
+  alert: SecurityAlert;
+  status: "analyzing" | "decided" | "pending_block" | "dismissed";
+  decision?: MonitorDecision;
+  applied: string[];
+  decidedAt?: string;
+}
+
+export interface MonitorConfig {
+  running: boolean;
+  engine: MonitorEngine;
+  autoBlock: boolean;
+  firstDelaySec: number;
+  intervalSec: number;
+  nextAlertAt?: string;
+}
+
+export interface BlockedPrincipal {
+  principalId: string;
+  principalName: string;
+  at: string;
+  alertId: string;
+  reason: string;
+}
+
+export interface WatchedPrincipal {
+  id: string;
+  name: string;
+  kind: "person" | "service";
+  subtitle: string;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  openFindings: number;
+  blocked: boolean;
+}
+
+export interface AlertType {
+  kind: AlertKind;
+  title: string;
+  source: string;
+  severity: AlertSeverity;
+  people: boolean;
+  services: boolean;
+}
+
+export type MonitorStreamEvent =
+  | { type: "snapshot"; config: MonitorConfig; events: MonitorEvent[]; blocked: BlockedPrincipal[]; iaAvailable: boolean }
+  | { type: "event"; event: MonitorEvent }
+  | { type: "config"; config: MonitorConfig }
+  | { type: "blocked"; blocked: BlockedPrincipal[] };
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init);
   const body = await res.json().catch(() => ({}));
@@ -259,7 +346,24 @@ export const api = {
   reset: () => post<{ ok: true }>("/api/reset"),
   decide: (findingId: string, decision: "approved" | "rejected", reviewer: string, note?: string) =>
     post<AuditEntry>(`/api/findings/${encodeURIComponent(findingId)}/decision`, { decision, reviewer, note }),
+  monitor: {
+    watchlist: () => request<WatchedPrincipal[]>("/api/monitor/watchlist"),
+    alertTypes: () => request<AlertType[]>("/api/monitor/alert-types"),
+    configure: (patch: Partial<MonitorConfig>) => post<MonitorConfig>("/api/monitor/config", patch),
+    sendAlert: (principalId: string, kind: AlertKind) => post<MonitorEvent>("/api/monitor/alerts", { principalId, kind }),
+    confirm: (alertId: string, accept: boolean) => post<MonitorEvent>(`/api/monitor/alerts/${encodeURIComponent(alertId)}/confirm`, { accept }),
+    unblock: (principalId: string) => post<BlockedPrincipal>(`/api/monitor/unblock/${encodeURIComponent(principalId)}`),
+  },
 };
+
+/** Follow the monitor's live feed. EventSource reconnects by itself; each reconnect starts with a fresh snapshot. */
+export function monitorStream(onEvent: (e: MonitorStreamEvent) => void, onConnection?: (connected: boolean) => void): () => void {
+  const source = new EventSource("/api/monitor/stream");
+  source.onopen = () => onConnection?.(true);
+  source.onmessage = (msg) => onEvent(JSON.parse(msg.data) as MonitorStreamEvent);
+  source.onerror = () => onConnection?.(false);
+  return () => source.close();
+}
 
 /**
  * Run the agent on a finding and stream its steps. Returns a function that stops listening.

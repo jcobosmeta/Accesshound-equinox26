@@ -19,6 +19,9 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
 3. **Investigate.** For each finding, an agent uses tools to check the HR record, group memberships and badge log, then explains it in plain language:
    *"Marta moved from Finance to Marketing in March and still has SAP payment approval."*
 4. **Decide.** The agent proposes **revoke** or **keep**. A human approves or rejects it, and every decision is written to an audit trail, ready for NIS2.
+5. **Monitor.** Security alerts (SIEM, EDR, IdP, DLP, badges) arrive in real time. Deterministic rules weigh each alert against what the audit knows about that user and blocks all their access when the combination is dangerous. Blocks are reversible.
+
+The UI has four tabs: **Mapa de riesgo**, **Hallazgos**, **Registro** and **Monitorización** (starts on its own when opened: live alert feed with a countdown to the next alert, watched users).
 
 ```
  HR records ─┐
@@ -65,6 +68,8 @@ server/src/
     replay.ts       scripted agent that calls the same tools on the same data — no API key needed
   store.ts          in-memory state; applies approved actions; writes the audit trail (data/audit.jsonl)
   audit-export.ts   the audit trail as CSV or JSON for download
+  monitor.ts        real-time monitoring: alert intake, rule-based decisions, reversible blocks,
+                    alert simulator and the live SSE feed
   index.ts          Express API; also serves web/dist when it has been built
 
 web/src/
@@ -80,6 +85,8 @@ web/src/
     AgentTrace      the agent's steps as they stream in: why, which lookup, what came back
     ProposalCard    the recommendation, evidence and planned changes; approve or reject
     AuditTrail      every decision and what it changed, with CSV and JSON download
+    MonitorView     live alerts and decisions, countdown to the next alert,
+                    users the audit flagged, unblock
 ```
 
 - **Detection is deterministic and investigation is AI.** The rules decide what looks wrong, so a planted case is never missed. The agent verifies each finding, explains it and proposes `revoke`, `keep` or `escalate`.
@@ -136,7 +143,14 @@ It checks each proposal against the expected outcome for the planted case: the d
 | GET | `/api/principals/:id` | A person or service account's profile and every access path (entitlement ← group ← membership), for the graph |
 | GET | `/api/audit` | The audit trail |
 | GET | `/api/audit/export?format=csv\|json` | The audit trail as a file download: CSV for spreadsheets (opens correctly in Excel), or JSON |
-| POST | `/api/reset` | Restores the demo data and clears proposals and the audit trail |
+| POST | `/api/reset` | Restores the demo data and clears proposals, the audit trail and the monitor |
+| GET | `/api/monitor/stream` | Server-Sent Events: `snapshot`, then `event` (alert received / decided), `config` and `blocked` |
+| POST | `/api/monitor/alerts` | Ingest an alert from any script or SIEM: `{ "principalId": "p-031", "kind": "mass_download", "detail"?, "severity"?, "source"? }` |
+| GET | `/api/monitor/alert-types` | The alert kinds the monitor understands |
+| GET | `/api/monitor/watchlist` | Users the audit flagged (open findings or risk ≥ 60%) and whether they are blocked |
+| POST | `/api/monitor/config` | `{ "running"?, "autoBlock"?, "firstDelaySec"?, "intervalSec"? }`; `running` starts the alert simulator (first alert after 30 s, then one a minute). The UI starts it when the Monitorización tab opens |
+| POST | `/api/monitor/alerts/:id/confirm` | `{ "accept": true \| false }` for a block the engine proposed while auto-block was off |
+| POST | `/api/monitor/unblock/:principalId` | Gives back every group membership the block removed |
 
 ## Status
 

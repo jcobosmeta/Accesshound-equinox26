@@ -76,25 +76,25 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       await run([
         { say: `Confirmo la situación laboral de ${first}.`, call: ["get_person", { person_id: pid }] },
         { say: "Listo todos los servicios y dispositivos que siguen activos.", call: ["list_access", { principal_id: pid }] },
-        { say: `¿Se ha usado el Móvil Trabajo o el Descodificador DEMO de ${first} desde el ${p.endDate}?`, call: ["get_badge_events", { person_id: pid, since: p.endDate }] },
+        { say: `¿Se ha usado el Móvil Trabajo o el Descodificador de ${first} desde el ${p.endDate}?`, call: ["get_badge_events", { person_id: pid, since: p.endDate }] },
         { say: "¿Y algún inicio de sesión remoto por VPN o en Azure?", call: ["get_login_events", { principal_id: pid, since: p.endDate }] },
       ]);
       const deco = after.find((e) => e.doorEntitlementId === "ent-descodificador-demo");
       return {
         decision: "escalate",
         headline: deco
-          ? `${first} causó baja el ${p.endDate}, pero el Descodificador DEMO se usó el ${deco.time.slice(0, 10)} a las ${deco.time.slice(11, 16)}.`
-          : `${first} causó baja el ${p.endDate} y aún tiene Azure, VPN Full y Descodificador DEMO.`,
-        explanation: `${name} causó baja el ${p.endDate}, pero nunca se cerraron sus accesos: la cuenta sigue teniendo Azure, VPN Full, VPN Laboratorio, Móvil Trabajo y Descodificador DEMO. ${deco ? `Esos dispositivos se usaron ${after.length} veces después de su salida, incluido el Descodificador DEMO a altas horas de la noche. ` : ""}Esto va más allá de una limpieza rutinaria y debe tratarse como un posible incidente de seguridad. Desactiva ya la cuenta y los dispositivos y abre un incidente.`,
+          ? `${first} causó baja el ${p.endDate}, pero el Descodificador se usó el ${deco.time.slice(0, 10)} a las ${deco.time.slice(11, 16)}.`
+          : `${first} causó baja el ${p.endDate} y aún tiene Azure, VPN Full y Descodificador.`,
+        explanation: `${name} causó baja el ${p.endDate}, pero nunca se cerraron sus accesos: la cuenta sigue teniendo Azure, VPN Full, VPN Laboratorio, Móvil Trabajo y Descodificador. ${deco ? `Esos dispositivos se usaron ${after.length} veces después de su salida, incluido el Descodificador a altas horas de la noche. ` : ""}Esto va más allá de una limpieza rutinaria y debe tratarse como un posible incidente de seguridad. Desactiva ya la cuenta y los dispositivos y abre un incidente.`,
         evidence: [
           `RR. HH.: baja el ${p.endDate}.`,
-          "Sigue en Administradores de TI (Azure, VPN Full, VPN Laboratorio) y Descodificador DEMO.",
+          "Sigue en Administradores de TI (Azure, VPN Full, VPN Laboratorio) y Descodificadores.",
           ...after.map((e) => `Registro de dispositivo permitido: ${repo.entitlement(e.doorEntitlementId)!.name} el ${e.time}.`),
         ],
         actions: [
-          { kind: "disable_badge", target: pid, reason: "Los dispositivos (Descodificador DEMO / Móvil Trabajo) pertenecen a un ex empleado." },
+          { kind: "disable_badge", target: pid, reason: "Los dispositivos (Descodificador / Móvil Trabajo) pertenecen a un ex empleado." },
           { kind: "disable_account", target: pid, reason: "La cuenta debió desactivarse al tramitar la baja." },
-          { kind: "open_incident", target: pid, reason: "Se usó el Descodificador DEMO después de la fecha de baja." },
+          { kind: "open_incident", target: pid, reason: "Se usó el Descodificador después de la fecha de baja." },
         ],
         confidence: "high",
       };
@@ -172,7 +172,7 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
         { say: `${first} tiene un acceso que no tiene ningún compañero de Ingeniería. Compruebo por qué.`, call: ["list_access", { principal_id: pid }] },
         { call: ["compare_with_peers", { person_id: pid, entitlement_id: ent }] },
         { say: "¿Hay un ticket aprobado?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: ent }] },
-        { say: "¿Se ha usado de verdad el Descodificador DEMO últimamente?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
+        { say: "¿Se ha usado de verdad el Descodificador últimamente?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
       ]);
       const t = repo.ticketsFor(pid, ent)[0];
       const valid = t && (!t.expiresDate || t.expiresDate >= repo.c.asOf);
