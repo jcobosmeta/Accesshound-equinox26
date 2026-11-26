@@ -1,7 +1,7 @@
 // Domain model for AccessHound. Everything the detectors and the agent see
 // comes from a `Company` snapshot built from these types.
 
-export type Department = "Finance" | "Marketing" | "IT" | "Engineering" | "HR" | "Sales" | "Operations";
+export type Department = "Finance" | "Marketing" | "IT" | "Engineering";
 
 export type Risk = "low" | "medium" | "high";
 
@@ -44,7 +44,7 @@ export interface Entitlement {
 export interface Group {
   id: string;
   name: string;
-  source: "Active Directory" | "SaaS" | "Physical access";
+  source: "Active Directory" | "SaaS" | "Devices";
   /** Set when the group is meant for one department (e.g. Finance AP clerks). */
   department?: Department;
   entitlementIds: string[];

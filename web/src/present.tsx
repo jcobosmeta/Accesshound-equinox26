@@ -3,16 +3,15 @@
 import { skinVars, Tag } from "@telefonica/mistica";
 import IconBuildingTreeRegular from "@telefonica/mistica-icons/icon-building-tree-regular";
 import IconCloudRegular from "@telefonica/mistica-icons/icon-cloud-regular";
-import IconDoorLockRegular from "@telefonica/mistica-icons/icon-door-lock-regular";
+import IconDeviceSignalRegular from "@telefonica/mistica-icons/icon-device-signal-regular";
 import IconExchangeRegular from "@telefonica/mistica-icons/icon-exchange-regular";
 import IconGroupRegular from "@telefonica/mistica-icons/icon-group-regular";
-import IconIdCardRegular from "@telefonica/mistica-icons/icon-id-card-regular";
 import IconKeyRegular from "@telefonica/mistica-icons/icon-key-regular";
 import IconLinkRegular from "@telefonica/mistica-icons/icon-link-regular";
 import IconLogoutRegular from "@telefonica/mistica-icons/icon-logout-regular";
 import IconPlaneRegular from "@telefonica/mistica-icons/icon-plane-regular";
 import IconRobotRegular from "@telefonica/mistica-icons/icon-robot-regular";
-import type { AccessPath, AgentMode, FindingStatus, FindingType, Proposal, Risk } from "./api";
+import type { AccessPath, AgentMode, FindingStatus, FindingType, Proposal, Risk, RiskLevel } from "./api";
 
 type IconComponent = typeof IconKeyRegular;
 
@@ -30,6 +29,23 @@ export const riskColors: Record<Risk, { strong: string; low: string }> = {
   high: { strong: skinVars.colors.error, low: skinVars.colors.errorLow },
   medium: { strong: skinVars.colors.warning, low: skinVars.colors.warningLow },
   low: { strong: skinVars.colors.neutralMedium, low: skinVars.colors.neutralLow },
+};
+
+/** Luminous dark-mode palette for 0–100% risk score rings, badges, and map highlights. */
+export const scorePalette: Record<RiskLevel, { stroke: string; bg: string; border: string; text: string; label: string }> = {
+  critical: { stroke: "#FF4D5E", bg: "#2B1118", border: "#EF4444", text: "#FF8592", label: "Critical risk" },
+  high: { stroke: "#FF7A33", bg: "#2B170D", border: "#F97316", text: "#FFA370", label: "High risk" },
+  medium: { stroke: "#FBBF24", bg: "#291F09", border: "#F59E0B", text: "#FCD34D", label: "Elevated risk" },
+  low: { stroke: "#34D399", bg: "#0D241C", border: "#10B981", text: "#6EE7B7", label: "Low risk" },
+};
+
+/** Dark-mode accent per department so map quadrants and hierarchy columns stay scannable. */
+export const departmentAccent: Record<string, { bg: string; border: string; text: string }> = {
+  Finance: { bg: "#10213D", border: "#1D4ED8", text: "#60A5FA" },
+  Marketing: { bg: "#2E1226", border: "#BE185D", text: "#F472B6" },
+  IT: { bg: "#1E1638", border: "#6D28D9", text: "#A78BFA" },
+  Engineering: { bg: "#0D2632", border: "#0E7490", text: "#22D3EE" },
+  Executive: { bg: "#0E1F3D", border: "#2563EB", text: "#38BDF8" },
 };
 
 const severityTag: Record<Risk, { type: "error" | "warning" | "inactive"; text: string }> = {
@@ -73,10 +89,10 @@ export const ModeTag = ({ mode }: { mode: AgentMode }) =>
 export const groupSourceIcon: Record<AccessPath["group"]["source"], IconComponent> = {
   "Active Directory": IconBuildingTreeRegular,
   SaaS: IconCloudRegular,
-  "Physical access": IconIdCardRegular,
+  Devices: IconDeviceSignalRegular,
 };
 
-export const entitlementIcon = (physical: boolean): IconComponent => (physical ? IconDoorLockRegular : IconKeyRegular);
+export const entitlementIcon = (physical: boolean): IconComponent => (physical ? IconDeviceSignalRegular : IconKeyRegular);
 
 /** "Lucía Fernández" → "LF" */
 export const initials = (name: string) =>

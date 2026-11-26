@@ -14,7 +14,7 @@ import { detect, type FindingType } from "../detectors/index.js";
 const expected: Record<FindingType, { decision: Proposal["decision"]; check: (p: Proposal) => string[] }> = {
   role_change_leftover: {
     decision: "revoke",
-    check: (p) => requireGroups(p, ["g-fin-payment-approvers", "g-fin-staff"]),
+    check: (p) => requireGroups(p, ["g-fin-cloud", "g-fin-staff"]),
   },
   leaver_access: {
     decision: "escalate",
@@ -28,7 +28,7 @@ const expected: Record<FindingType, { decision: Proposal["decision"]; check: (p:
     decision: "revoke",
     // Removing either duty breaks the combination.
     check: (p) =>
-      p.actions.some((a) => a.kind === "remove_from_group" && ["g-fin-payment-approvers", "g-fin-ap-clerks"].includes(a.target))
+      p.actions.some((a) => a.kind === "remove_from_group" && ["g-fin-cloud", "g-fin-firebase"].includes(a.target))
         ? []
         : ["doesn't remove either conflicting group"],
   },
@@ -42,7 +42,7 @@ const expected: Record<FindingType, { decision: Proposal["decision"]; check: (p:
   },
 };
 
-const BASELINE_GROUPS = ["g-all-staff", "g-vpn"]; // everyone has these; removing them is overreach
+const BASELINE_GROUPS = ["g-all-staff"]; // everyone has this; removing it is overreach
 const requireGroups = (p: Proposal, groups: string[]) =>
   groups.filter((g) => !p.actions.some((a) => a.kind === "remove_from_group" && a.target === g)).map((g) => `missing remove ${g}`);
 const requireKinds = (p: Proposal, kinds: string[]) =>

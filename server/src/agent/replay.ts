@@ -51,19 +51,19 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       const sensitive = access.find((a) => leftover.includes(a.group.id) && a.entitlement.risk === "high")!;
       await run([
         { say: `Checking ${first}'s HR history to confirm the department move.`, call: ["get_hr_history", { person_id: pid }] },
-        { say: "Now what access is still attached to the old role.", call: ["list_access", { principal_id: pid }] },
+        { say: "Now checking what services are still attached to the old role.", call: ["list_access", { principal_id: pid }] },
         { say: `Do any of ${first}'s new peers have ${sensitive.entitlement.name}?`, call: ["compare_with_peers", { person_id: pid, entitlement_id: sensitive.entitlement.id }] },
         { say: "Is there a ticket that still justifies it?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: sensitive.entitlement.id }] },
       ]);
       return {
         decision: "revoke",
-        headline: `${first} moved to ${transfer.toDepartment} on ${transfer.date} and can still ${sensitive.entitlement.name.toLowerCase()} in ${sensitive.entitlement.system}.`,
-        explanation: `${name} was a Financial Controller and transferred to ${transfer.toDepartment} as ${repo.person(pid)!.title}. The ${transfer.fromDepartment} groups were never removed, so ${first} can still release supplier payments. None of the ${transfer.toDepartment} team has this, and the only ticket for it was for the old Finance role. Removing the old ${transfer.fromDepartment} groups closes the gap without touching ${first}'s ${transfer.toDepartment} access.`,
+        headline: `${first} moved to ${transfer.toDepartment} on ${transfer.date} and still has ${sensitive.entitlement.name} access from ${transfer.fromDepartment}.`,
+        explanation: `${name} was a Cloud Controller in ${transfer.fromDepartment} and transferred to ${transfer.toDepartment} as ${repo.person(pid)!.title}. The old ${transfer.fromDepartment} groups were never removed, so ${first} still holds ${sensitive.entitlement.name} and Jira access from Finance. None of the ${transfer.toDepartment} team holds ${sensitive.entitlement.name}, and the original ticket was only for the old Finance role. Removing those groups closes the gap without touching ${first}'s Marketing VPN DEMO access.`,
         evidence: [
           `HR: transferred ${transfer.fromDepartment} → ${transfer.toDepartment} on ${transfer.date}.`,
           `Still a member of ${leftover.map((g) => repo.group(g)!.name).join(" and ")}.`,
-          `0 of ${repo.activePeers(repo.person(pid)!).length} ${transfer.toDepartment} peers can approve payments.`,
-          `Ticket TCK-2021-0007 granted payment approval for the Financial Controller role, which ${first} no longer holds.`,
+          `0 of ${repo.activePeers(repo.person(pid)!).length} ${transfer.toDepartment} peers have ${sensitive.entitlement.name}.`,
+          `Ticket TCK-2021-0007 granted ${sensitive.entitlement.name} for the Cloud Controller role, which ${first} no longer holds.`,
         ],
         actions: leftover.map((g) => ({ kind: "remove_from_group" as const, target: g, reason: `Belongs to ${first}'s previous ${transfer.fromDepartment} role.` })),
         confidence: "high",
@@ -75,26 +75,26 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       const after = repo.badgeEvents(pid, p.endDate);
       await run([
         { say: `Confirming ${first}'s employment status.`, call: ["get_person", { person_id: pid }] },
-        { say: "Listing what is still active.", call: ["list_access", { principal_id: pid }] },
-        { say: `Has the badge been used since ${p.endDate}?`, call: ["get_badge_events", { person_id: pid, since: p.endDate }] },
-        { say: "And any remote logins?", call: ["get_login_events", { principal_id: pid, since: p.endDate }] },
+        { say: "Listing every service and device still active.", call: ["list_access", { principal_id: pid }] },
+        { say: `Has ${first}'s Móvil Trabajo or Descodificador DEMO been used since ${p.endDate}?`, call: ["get_badge_events", { person_id: pid, since: p.endDate }] },
+        { say: "And any remote VPN or Azure logins?", call: ["get_login_events", { principal_id: pid, since: p.endDate }] },
       ]);
-      const room = after.find((e) => e.doorEntitlementId === "ent-badge-server-room");
+      const deco = after.find((e) => e.doorEntitlementId === "ent-descodificador-demo");
       return {
         decision: "escalate",
-        headline: room
-          ? `${first} left on ${p.endDate}, and the badge opened the server room on ${room.time.slice(0, 10)} at ${room.time.slice(11, 16)}.`
-          : `${first} left on ${p.endDate} and still has admin and building access.`,
-        explanation: `${name} resigned on ${p.endDate} but was never offboarded: the account is still a Domain Admin and the badge still works. ${room ? `That badge was used ${after.length} times after leaving, including the server room late at night. ` : ""}This is more than leftover access; it should be treated as a possible incident. Disable the badge and account now and ask security to review what happened in the server room.`,
+        headline: deco
+          ? `${first} left on ${p.endDate}, yet Descodificador DEMO was accessed on ${deco.time.slice(0, 10)} at ${deco.time.slice(11, 16)}.`
+          : `${first} left on ${p.endDate} and still holds Azure, VPN Full and Descodificador DEMO.`,
+        explanation: `${name} resigned on ${p.endDate} but was never offboarded: the account still holds Azure, VPN Full, VPN Laboratorio, Móvil Trabajo and Descodificador DEMO. ${deco ? `Those devices were used ${after.length} times after departure, including Descodificador DEMO late at night. ` : ""}This goes beyond routine cleanup and should be handled as a possible security incident. Disable the account and devices immediately and open an incident.`,
         evidence: [
           `HR: left on ${p.endDate}.`,
-          `Still in IT domain admins (Domain Admin, Backup console admin) and Server room access.`,
-          ...after.map((e) => `Badge granted: ${repo.entitlement(e.doorEntitlementId)!.name} at ${e.time}.`),
+          `Still in IT Core Admins (Azure, VPN Full, VPN Laboratorio) and Descodificador DEMO.`,
+          ...after.map((e) => `Device check-in granted: ${repo.entitlement(e.doorEntitlementId)!.name} at ${e.time}.`),
         ],
         actions: [
-          { kind: "disable_badge", target: pid, reason: "Badge belongs to someone who no longer works here." },
+          { kind: "disable_badge", target: pid, reason: "Devices (Descodificador DEMO / Móvil Trabajo) belong to a former employee." },
           { kind: "disable_account", target: pid, reason: "Account should have been disabled at offboarding." },
-          { kind: "open_incident", target: pid, reason: "Badge used to enter the server room after leaving." },
+          { kind: "open_incident", target: pid, reason: "Descodificador DEMO device accessed after departure date." },
         ],
         confidence: "high",
       };
@@ -105,41 +105,41 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       const owner = repo.person(sa.ownerId)!;
       await run([
         { say: "Looking up the service account and its owner.", call: ["get_service_account", { account_id: pid }] },
-        { say: "What can it do?", call: ["list_access", { principal_id: pid }] },
-        { say: "Is it still in use?", call: ["get_login_events", { principal_id: pid }] },
+        { say: "Checking which services it can access.", call: ["list_access", { principal_id: pid }] },
+        { say: "Checking recent Azure and VPN Full logins.", call: ["get_login_events", { principal_id: pid }] },
       ]);
       const logins = repo.loginEvents(pid);
       return {
         decision: "revoke",
-        headline: `${sa.name} is a Domain Admin with no owner since ${owner.name} left on ${owner.endDate}.`,
-        explanation: `This account runs "${sa.description.toLowerCase()}". Its owner left ${owner.endDate}, so nobody is responsible for it, yet it still has full control of the domain and logs in every few nights from ${logins.at(-1)?.ip}. An unowned admin account is a favourite target for attackers. Remove the admin rights now and have IT confirm whether the job is still needed before deleting it.`,
+        headline: `${sa.name} holds Azure, VPN Full and VPN Laboratorio with no owner since ${owner.name} left on ${owner.endDate}.`,
+        explanation: `This account runs "${sa.description.toLowerCase()}". Its owner left on ${owner.endDate}, leaving nobody responsible for it, yet it still holds Azure, VPN Full and VPN Laboratorio and keeps authenticating at night from ${logins.at(-1)?.ip}. An unowned privileged account is a prime target for attackers. Remove IT Core Admins now and have IT confirm whether the job is still needed.`,
         evidence: [
           `Owner ${owner.name} left on ${owner.endDate}.`,
-          `Member of IT domain admins (Domain Admin, Backup console admin) since ${sa.createdDate}.`,
+          `Member of IT Core Admins (Azure, VPN Full, VPN Laboratorio) since ${sa.createdDate}.`,
           ...logins.map((l) => `Login: ${l.system} at ${l.time} from ${l.ip}.`),
         ],
-        actions: [{ kind: "remove_from_group", target: "g-it-admins", reason: "No owner; admin rights unjustified." }],
+        actions: [{ kind: "remove_from_group", target: "g-it-admins", reason: "No active owner; Azure & VPN Full rights unjustified." }],
         confidence: "high",
       };
     }
 
     case "toxic_combination": {
       await run([
-        { say: `Checking how ${first} got both permissions.`, call: ["list_access", { principal_id: pid }] },
-        { say: "Is there a ticket for the payment approval?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: "ent-sap-approve-payment" }] },
-        { say: "Who else in Finance approves payments?", call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-sap-approve-payment" }] },
+        { say: `Checking how ${first} got both Firebase and Azure access.`, call: ["list_access", { principal_id: pid }] },
+        { say: "Is there a valid ticket for the Azure access?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: "ent-azure" }] },
+        { say: "Who else in Finance has Azure access?", call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-azure" }] },
       ]);
-      const ticket = repo.ticketsFor(pid, "ent-sap-approve-payment")[0];
+      const ticket = repo.ticketsFor(pid, "ent-azure")[0];
       return {
         decision: "revoke",
-        headline: `${first} can create a supplier and then approve paying it — the "temporary" cover ended on ${ticket?.expiresDate}.`,
-        explanation: `${name} is an Accounts Payable clerk, so creating suppliers is part of the job. Payment approval was added on ${ticket?.approvedDate} to cover a colleague's leave and was meant to end on ${ticket?.expiresDate}, but nobody removed it. Holding both lets one person add a fake supplier and pay it. Remove the payment approval; the controllers already cover it.`,
+        headline: `${first} holds both Firebase and Azure admin access — the temporary cover expired on ${ticket?.expiresDate}.`,
+        explanation: `${name} is a Billing Analyst who uses Firebase as part of the role. Azure access was added on ${ticket?.approvedDate} to cover a colleague's leave and was meant to end on ${ticket?.expiresDate}, but it was never revoked. Holding both Firebase and Azure violates separation of duties. Remove Finance Azure while keeping ${first}'s regular Firebase access.`,
         evidence: [
-          "SAP: Create / modify suppliers via SAP AP clerks (normal for the role).",
-          `SAP: Approve payments via SAP payment approvers since ${ticket?.approvedDate}.`,
+          "Firebase via Finance Firebase (normal for the role).",
+          `Azure via Finance Azure since ${ticket?.approvedDate}.`,
           `Ticket ${ticket?.id}: "${ticket?.justification}" — expired ${ticket?.expiresDate}.`,
         ],
-        actions: [{ kind: "remove_from_group", target: "g-fin-payment-approvers", reason: "Temporary cover expired; breaks separation of duties." }],
+        actions: [{ kind: "remove_from_group", target: "g-fin-cloud", reason: "Temporary Azure cover expired; breaks separation of duties with Firebase." }],
         confidence: "high",
       };
     }
@@ -147,20 +147,20 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
     case "impossible_travel": {
       const login = repo.loginEvents(pid).find((l) => l.country !== "Spain")!;
       await run([
-        { say: `Pulling ${first}'s badge swipes for that morning.`, call: ["get_badge_events", { person_id: pid, since: login.time.slice(0, 10) }] },
-        { say: "And the VPN logins around the same time.", call: ["get_login_events", { principal_id: pid, since: login.time.slice(0, 10) }] },
+        { say: `Checking ${first}'s Móvil Trabajo check-ins for that morning.`, call: ["get_badge_events", { person_id: pid, since: login.time.slice(0, 10) }] },
+        { say: "Checking VPN General logins around the same time.", call: ["get_login_events", { principal_id: pid, since: login.time.slice(0, 10) }] },
         { say: `Any travel on record for ${first}?`, call: ["get_person", { person_id: pid }] },
       ]);
       const gap = (t: string) => Math.abs(Date.parse(t) - Date.parse(login.time));
       const badge = repo.badgeEvents(pid, login.time.slice(0, 10)).sort((a, b) => gap(a.time) - gap(b.time))[0]!;
       return {
         decision: "escalate",
-        headline: `${first} was in the Madrid office at ${badge.time.slice(11, 16)}, but someone logged in to the VPN as ${first} from ${login.city} at ${login.time.slice(11, 16)}.`,
-        explanation: `${first}'s badge opened the Madrid HQ entrance, and minutes later a VPN session started from ${login.city}, ${login.country}. One person cannot be in both places, so ${first}'s password is most likely in someone else's hands. This isn't an access-rights problem to revoke; it's a probable account compromise. Reset the credentials, end the VPN session and open an incident.`,
-        evidence: [`Badge: ${badge.time} at ${badge.site}.`, `VPN: ${login.time} from ${login.city}, ${login.country} (IP ${login.ip}).`, "No travel on record; home office Madrid HQ."],
+        headline: `${first}'s Móvil Trabajo checked in at Madrid HQ at ${badge.time.slice(11, 16)}, while ${login.system} logged in from ${login.city} at ${login.time.slice(11, 16)}.`,
+        explanation: `${first}'s corporate Móvil Trabajo registered in Madrid HQ, and 19 minutes later a ${login.system} session opened from ${login.city}, ${login.country}. One person cannot be in both places, pointing to compromised VPN credentials rather than an access-rights misconfiguration. Reset credentials immediately and open a security incident.`,
+        evidence: [`Móvil Trabajo: ${badge.time} at ${badge.site}.`, `${login.system}: ${login.time} from ${login.city}, ${login.country} (IP ${login.ip}).`, "No travel on record; home office Madrid HQ."],
         actions: [
-          { kind: "reset_credentials", target: pid, reason: "Password likely compromised." },
-          { kind: "open_incident", target: pid, reason: "Impossible travel between badge and VPN." },
+          { kind: "reset_credentials", target: pid, reason: "VPN General credentials likely compromised." },
+          { kind: "open_incident", target: pid, reason: "Impossible travel between Madrid Móvil Trabajo check-in and Lagos VPN General login." },
         ],
         confidence: "medium",
       };
@@ -169,10 +169,10 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
     case "peer_outlier": {
       const ent = f.entitlementIds[0]!;
       await run([
-        { say: `${first} has access the rest of the team doesn't. Checking why.`, call: ["list_access", { principal_id: pid }] },
+        { say: `${first} has access none of the Engineering peers hold. Checking why.`, call: ["list_access", { principal_id: pid }] },
         { call: ["compare_with_peers", { person_id: pid, entitlement_id: ent }] },
         { say: "Is there an approved ticket?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: ent }] },
-        { say: "Has the access actually been used, and when?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
+        { say: "Has Descodificador DEMO actually been used recently?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
       ]);
       const t = repo.ticketsFor(pid, ent)[0];
       const valid = t && (!t.expiresDate || t.expiresDate >= repo.c.asOf);
@@ -181,7 +181,7 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
         return {
           decision: "keep",
           headline: `${first}'s ${e.name} access is unusual for ${repo.person(pid)!.department} but approved until ${t.expiresDate}.`,
-          explanation: `None of ${first}'s peers have this, which is why it was flagged. But ticket ${t.id} shows it was requested by ${repo.principalName(t.requestedBy)} and approved by ${t.approvedBy} because "${t.justification.toLowerCase()}" The approval is still valid, and the one recent use (${repo.badgeEvents(pid, "2026-11-01").find((b) => b.doorEntitlementId === ent)?.time ?? "none"}) fits an on-call call-out. Keep it, and review again when the ticket expires.`,
+          explanation: `None of ${first}'s Engineering peers hold ${e.name}, which is why it was flagged. However, ticket ${t.id} shows it was requested by ${repo.principalName(t.requestedBy)} and approved by ${t.approvedBy} because "${t.justification.toLowerCase()}" The approval is valid until ${t.expiresDate}, and the recent on-call usage matches the rotation. Keep it and review when the ticket expires.`,
           evidence: [`Ticket ${t.id}: approved by ${t.approvedBy} on ${t.approvedDate}, expires ${t.expiresDate}.`, `Justification: ${t.justification}`],
           actions: [],
           confidence: "high",

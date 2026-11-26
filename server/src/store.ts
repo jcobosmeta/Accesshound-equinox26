@@ -130,9 +130,9 @@ class Store {
         return `Disabled account ${this.repo.principalName(principalId)} (${n} group memberships removed)`;
       }
       case "disable_badge": {
-        const badgeGroups = new Set(c.groups.filter((g) => g.source === "Physical access").map((g) => g.id));
-        c.memberships = c.memberships.filter((m) => !(m.principalId === principalId && badgeGroups.has(m.groupId)));
-        return `Disabled badge for ${this.repo.principalName(principalId)}`;
+        const deviceGroups = new Set(c.groups.filter((g) => g.source === "Devices").map((g) => g.id));
+        c.memberships = c.memberships.filter((m) => !(m.principalId === principalId && deviceGroups.has(m.groupId)));
+        return `Disabled device access for ${this.repo.principalName(principalId)}`;
       }
       case "reset_credentials":
         return `Credentials reset requested for ${this.repo.principalName(principalId)}`;

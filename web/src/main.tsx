@@ -7,17 +7,21 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const theme = {
   skin: getTelefonicaSkin(),
-  colorScheme: "light" as const,
+  colorScheme: "dark" as const,
   i18n: { locale: "en-US" as const, phoneNumberFormattingRegionCode: "ES" as const },
 };
 
 // Telefónica Sans isn't bundled, so fall back to the platform's UI sans-serif.
 const GlobalStyles = () => (
   <style>{`
+    :root {
+      color-scheme: dark;
+    }
     body {
       margin: 0;
       font-family: 'Telefonica Sans', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       background-color: ${skinVars.colors.background};
+      color: ${skinVars.colors.textPrimary};
     }
   `}</style>
 );

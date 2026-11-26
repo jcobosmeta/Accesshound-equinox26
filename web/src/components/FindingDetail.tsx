@@ -19,50 +19,15 @@ import {
 } from "@telefonica/mistica";
 import IconAiRegular from "@telefonica/mistica-icons/icon-ai-regular";
 import * as React from "react";
-import { api, type AccessPath, type AgentEvent, type AuditEntry, type Finding, type PrincipalDetail } from "../api";
+import type { AgentEvent, AuditEntry, Finding, PrincipalDetail } from "../api";
 import { findingTypes, formatDate, SeverityTag, StatusTag } from "../present";
+import { forgetRevocations, usePrincipal } from "../usePrincipal";
 import { AccessGraph } from "./AccessGraph";
 import { AgentTrace } from "./AgentTrace";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { ProposalCard } from "./ProposalCard";
 
-const pathKey = (a: AccessPath) => `${a.group.id}|${a.entitlement.id}`;
-
-// Access we've seen per principal, so that after an approved revoke the map can still show what was removed.
-const lastSeen = new Map<string, AccessPath[]>();
-const revoked = new Map<string, Map<string, AccessPath>>();
-
-/** Forget remembered revocations (after the demo is reset). */
-export function forgetRevocations() {
-  lastSeen.clear();
-  revoked.clear();
-}
-
-function usePrincipal(principalId: string, dataVersion: number) {
-  const [detail, setDetail] = React.useState<PrincipalDetail>();
-  const [error, setError] = React.useState<string>();
-  React.useEffect(() => {
-    let current = true;
-    api.principal(principalId).then(
-      (d) => {
-        if (!current) return;
-        const now = new Set(d.access.map(pathKey));
-        const gone = revoked.get(principalId) ?? new Map<string, AccessPath>();
-        for (const a of lastSeen.get(principalId) ?? []) if (!now.has(pathKey(a))) gone.set(pathKey(a), a);
-        for (const k of now) gone.delete(k); // restored, e.g. after a reset
-        revoked.set(principalId, gone);
-        lastSeen.set(principalId, d.access);
-        setDetail(d);
-        setError(undefined);
-      },
-      (err) => current && setError(err instanceof Error ? err.message : String(err))
-    );
-    return () => {
-      current = false;
-    };
-  }, [principalId, dataVersion]);
-  return { detail, error, removed: [...(revoked.get(principalId)?.values() ?? [])] };
-}
+export { forgetRevocations };
 
 function principalLine(detail: PrincipalDetail) {
   if (detail.kind === "service")

@@ -27,7 +27,7 @@ const toolLabels: Record<string, string> = {
   list_access: "Listed current access",
   compare_with_peers: "Compared with peers",
   get_access_tickets: "Checked access tickets",
-  get_badge_events: "Read the badge log",
+  get_badge_events: "Read the device log",
   get_login_events: "Read the login log",
 };
 
@@ -52,7 +52,7 @@ function describeOutput(tool: string, output: unknown): string {
       case "get_access_tickets":
         return n ? plural(n, "ticket") : "No tickets";
       case "get_badge_events":
-        return plural(n, "badge swipe");
+        return plural(n, "device event");
       case "get_login_events":
         return plural(n, "login");
       default:

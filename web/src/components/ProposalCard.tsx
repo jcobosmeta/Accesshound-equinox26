@@ -29,7 +29,7 @@ function describeAction(action: Proposal["actions"][number], principalName: stri
     case "disable_account":
       return `Disable ${principalName}'s account and remove every group membership`;
     case "disable_badge":
-      return `Disable ${principalName}'s badge`;
+      return `Disable ${principalName}'s devices`;
     case "reset_credentials":
       return `Reset ${principalName}'s credentials`;
     case "open_incident":

@@ -59,7 +59,7 @@ export function detect(repo: Repo): Finding[] {
       facts: [
         `Left the company on ${p.endDate}.`,
         `Still holds: ${[...new Set(highRisk)].join(", ") || "low-risk access only"}.`,
-        ...(afterLeaving.length ? [`${afterLeaving.length} badge swipes granted after leaving, latest ${afterLeaving.at(-1)!.time}.`] : []),
+        ...(afterLeaving.length ? [`${afterLeaving.length} device check-ins granted after leaving, latest ${afterLeaving.at(-1)!.time}.`] : []),
       ],
       entitlementIds: ids,
     });
@@ -107,7 +107,7 @@ export function detect(repo: Repo): Finding[] {
       facts: [
         `Transferred ${e.fromDepartment} → ${e.toDepartment} on ${e.date} (${days} days ago).`,
         `Still in: ${leftovers.map(({ g }) => g.name).join(", ")}.`,
-        `Leftover entitlements: ${ents.map((x) => `${x.system}: ${x.name}`).join(", ")}.`,
+        `Leftover entitlements: ${ents.map((x) => (x.system === x.name ? x.name : `${x.system}: ${x.name}`)).join(", ")}.`,
       ],
       entitlementIds: ids,
     });
@@ -126,7 +126,7 @@ export function detect(repo: Repo): Finding[] {
         type: "toxic_combination",
         severity: "high",
         principalId: pid,
-        title: `${repo.principalName(pid)} can both ${a.entitlement.name.toLowerCase()} and ${b.entitlement.name.toLowerCase()}`,
+        title: `${repo.principalName(pid)} holds both ${a.entitlement.name} and ${b.entitlement.name}`,
         facts: [`Violates rule "${rule.name}": ${rule.why}`, `${a.entitlement.name} via ${a.group.name}; ${b.entitlement.name} via ${b.group.name}.`],
         entitlementIds: [a.entitlement.id, b.entitlement.id],
       });
@@ -150,12 +150,12 @@ export function detect(repo: Repo): Finding[] {
         type: "impossible_travel",
         severity: "high",
         principalId: p.id,
-        title: `${p.name} badged in at ${clash.site} and logged in to ${login.system} from ${login.city} ${minutes} minutes apart`,
+        title: `${p.name}'s device checked in at ${clash.site} and logged in to ${login.system} from ${login.city} ${minutes} minutes apart`,
         facts: [
-          `Badge: ${clash.time} at ${clash.site} (${clash.city}, ${clash.country}).`,
+          `Device: ${clash.time} at ${clash.site} (${clash.city}, ${clash.country}).`,
           `${login.system} login: ${login.time} from ${login.city}, ${login.country} (IP ${login.ip}).`,
         ],
-        entitlementIds: ["ent-vpn"],
+        entitlementIds: ["ent-vpn-general"],
       });
       break;
     }
@@ -178,7 +178,7 @@ export function detect(repo: Repo): Finding[] {
         type: "peer_outlier",
         severity: "medium",
         principalId: p.id,
-        title: `${p.name} has ${ent.system}: ${ent.name}, which ${holders === 0 ? "none" : holders} of ${peers.length} ${p.department} peers have`,
+        title: `${p.name} has ${ent.system === ent.name ? ent.name : `${ent.system}: ${ent.name}`}, which ${holders === 0 ? "none" : holders} of ${peers.length} ${p.department} peers have`,
         facts: [`${holders}/${peers.length} active ${p.department} peers hold ${ent.name}.`, `Granted via ${a.group.name} on ${a.membership.grantedDate}.`],
         entitlementIds: [ent.id],
       });

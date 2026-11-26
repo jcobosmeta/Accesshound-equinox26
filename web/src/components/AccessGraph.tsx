@@ -36,7 +36,22 @@ const COLUMN_GAP = 40;
 const sourceShort: Record<AccessPath["group"]["source"], string> = {
   "Active Directory": "AD",
   SaaS: "SaaS",
-  "Physical access": "Badge",
+  Devices: "Devices",
+};
+
+/** PNG icons served from web/public/icons/ for each configured service. */
+const serviceIconPng: Record<string, string> = {
+  "ent-firebase": "/icons/firebase.png",
+  "ent-confluence": "/icons/confluence.png",
+  "ent-sharepoint": "/icons/sharepoint.png",
+  "ent-jira": "/icons/jira.png",
+  "ent-vpn-general": "/icons/vpn-general.png",
+  "ent-vpn-lab": "/icons/vpn-lab.png",
+  "ent-vpn-demo": "/icons/vpn-demo.png",
+  "ent-vpn-full": "/icons/vpn-full.png",
+  "ent-azure": "/icons/azure.png",
+  "ent-movil-trabajo": "/icons/movil-trabajo.png",
+  "ent-descodificador-demo": "/icons/descodificador-demo.png",
 };
 // The principal column holds one short box; give the width to groups and entitlements.
 const COLUMNS = "minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.2fr)";
@@ -230,6 +245,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
 
   const entNode = ({ id: eid, entitlement: e, state }: EntNode) => {
     const Icon = entitlementIcon(e.physical);
+    const pngSrc = serviceIconPng[eid];
     const id = `e:${eid}`;
     return (
       <Node
@@ -238,7 +254,26 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
         state={nodeState(id, state)}
         hovered={hoverId === id}
         onHover={setHoverId}
-        icon={<Icon size={20} color={state === "flagged" ? skinVars.colors.error : skinVars.colors.neutralHigh} />}
+        icon={
+          pngSrc ? (
+            <img
+              src={pngSrc}
+              alt={e.name}
+              width={28}
+              height={28}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 7,
+                objectFit: "cover",
+                flexShrink: 0,
+                border: `1px solid ${state === "flagged" ? skinVars.colors.error : "rgba(148, 163, 184, 0.25)"}`,
+              }}
+            />
+          ) : (
+            <Icon size={20} color={state === "flagged" ? skinVars.colors.error : skinVars.colors.neutralHigh} />
+          )
+        }
         title={e.name}
         fill
         subtitle={
@@ -246,7 +281,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
             `${e.system} · revoked`
           ) : (
             <>
-              {e.system}
+              {e.physical ? "Device" : e.system !== e.name ? e.system : "Service"}
               {e.risk !== "low" && (
                 <Text1 as="span" medium color={e.risk === "high" ? skinVars.colors.error : skinVars.colors.warning}>
                   {` · ${e.risk} risk`}
@@ -266,13 +301,16 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
           <Inline space="between" alignItems="center" wrap verticalSpace={8}>
             <Inline space={16} alignItems="center" wrap verticalSpace={8}>
               <Text1 regular color={skinVars.colors.textSecondary}>
-                {`${detail.access.length} access paths · ${flaggedCount} flagged`}
+                {`${detail.access.length} access path${detail.access.length === 1 ? "" : "s"}`}
+                {flaggedCount > 0 ? ` · ${flaggedCount} flagged` : ""}
                 {removed.length ? ` · ${removed.length} revoked` : ""}
               </Text1>
             </Inline>
-            <Chip active={flaggedOnly} onPress={() => setFlaggedOnly((v) => !v)}>
-              {flaggedOnly && hiddenCount ? `Flagged only (${hiddenCount} hidden)` : "Flagged only"}
-            </Chip>
+            {(flagged.length > 0 || removed.length > 0) && (
+              <Chip active={flaggedOnly} onPress={() => setFlaggedOnly((v) => !v)}>
+                {flaggedOnly && hiddenCount ? `Flagged only (${hiddenCount} hidden)` : "Flagged only"}
+              </Chip>
+            )}
           </Inline>
 
           {isMobile ? (
@@ -375,9 +413,11 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
           )}
 
           <Inline space={24} wrap verticalSpace={8} alignItems="center">
-            <Text1 regular color={skinVars.colors.textSecondary}>
-              Red: the access this finding is about
-            </Text1>
+            {flagged.length > 0 && (
+              <Text1 regular color={skinVars.colors.textSecondary}>
+                Red: the access this finding is about
+              </Text1>
+            )}
             {removed.length > 0 && (
               <Text1 regular color={skinVars.colors.textSecondary}>
                 Dashed: removed by an approved decision

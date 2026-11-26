@@ -1,7 +1,66 @@
 // Types mirror the server's API responses (server/src/index.ts, store.ts, agent/types.ts).
 
 export type Risk = "low" | "medium" | "high";
+export type RiskLevel = "low" | "medium" | "high" | "critical";
 export type AgentMode = "live" | "replay";
+
+export interface RiskFactor {
+  label: string;
+  points: number;
+  severity: Risk;
+}
+
+export interface PrincipalRisk {
+  score: number;
+  level: RiskLevel;
+  factors: RiskFactor[];
+}
+
+export interface GraphNode {
+  id: string;
+  kind: "org" | "person" | "service";
+  name: string;
+  subtitle: string;
+  department: string;
+  status: "active" | "left" | "service" | "org";
+  managerId?: string;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  riskFactors: RiskFactor[];
+  entitlementCount: number;
+  highRiskEntitlementCount: number;
+  findingIds: string[];
+  topFindingSeverity?: Risk;
+  topFindingStatus?: FindingStatus;
+}
+
+export type GraphEdgeKind =
+  | "hierarchy"
+  | "owns"
+  | "cross_dept_access"
+  | "shared_privilege"
+  | "ticket_approval"
+  | "peer_mesh";
+
+export interface GraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  kind: GraphEdgeKind;
+  label?: string;
+  risk?: Risk;
+  dashed?: boolean;
+}
+
+export interface OrgGraph {
+  company: string;
+  asOf: string;
+  avgRisk: number;
+  maxRisk: number;
+  atRiskCount: number;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
 
 export type FindingType =
   | "leaver_access"
@@ -86,14 +145,74 @@ export interface ServiceAccount {
 
 export interface AccessPath {
   entitlement: Entitlement;
-  group: { id: string; name: string; source: "Active Directory" | "SaaS" | "Physical access" };
+  group: { id: string; name: string; source: "Active Directory" | "SaaS" | "Devices" };
   granted: string;
   ticketId: string | null;
 }
 
+export interface PrincipalRelations {
+  manager: { id: string; name: string; title: string; department: string } | null;
+  directReports: { id: string; name: string; title: string; status: "active" | "left" }[];
+  owner: { id: string; name: string; title: string; department: string; status: "active" | "left" } | null;
+  ownedServiceAccounts: { id: string; name: string; description: string }[];
+}
+
+export interface HrEventItem {
+  personId: string;
+  date: string;
+  type: "hire" | "transfer" | "leave";
+  fromDepartment?: string;
+  toDepartment?: string;
+  note?: string;
+}
+
+export interface AccessTicketItem {
+  id: string;
+  principalId: string;
+  entitlementId: string;
+  entitlementName: string;
+  requestedBy: string;
+  requestedByName: string;
+  approvedBy: string;
+  approvedByName: string;
+  justification: string;
+  approvedDate: string;
+  expiresDate?: string;
+}
+
+export interface BadgeEventItem {
+  personId: string;
+  doorEntitlementId: string;
+  doorName: string;
+  time: string;
+  site: string;
+  city: string;
+  country: string;
+  result: "granted" | "denied";
+}
+
+export interface LoginEventItem {
+  principalId: string;
+  system: string;
+  time: string;
+  city: string;
+  country: string;
+  ip: string;
+}
+
+interface PrincipalExtras {
+  risk: PrincipalRisk;
+  access: AccessPath[];
+  relations: PrincipalRelations;
+  hrHistory: HrEventItem[];
+  tickets: AccessTicketItem[];
+  recentBadges: BadgeEventItem[];
+  recentLogins: LoginEventItem[];
+}
+
 export type PrincipalDetail =
-  | { kind: "person"; profile: Person; access: AccessPath[] }
-  | { kind: "service"; profile: ServiceAccount; access: AccessPath[] };
+  | ({ kind: "person"; profile: Person } & PrincipalExtras)
+  | ({ kind: "service"; profile: ServiceAccount } & PrincipalExtras);
 
 export interface AuditEntry {
   id: string;
@@ -133,6 +252,7 @@ const post = <T>(path: string, body?: unknown) =>
 export const api = {
   summary: () => request<Summary>("/api/summary"),
   findings: () => request<Finding[]>("/api/findings"),
+  graph: () => request<OrgGraph>("/api/graph"),
   principal: (id: string) => request<PrincipalDetail>(`/api/principals/${encodeURIComponent(id)}`),
   audit: () => request<AuditEntry[]>("/api/audit"),
   auditExportUrl: (format: "csv" | "json") => `/api/audit/export?format=${format}`,
