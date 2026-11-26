@@ -21,6 +21,7 @@ import IconShieldLockRegular from "@telefonica/mistica-icons/icon-shield-lock-re
 import * as React from "react";
 import { api, investigate, type AgentEvent, type AuditEntry, type Finding, type Summary } from "./api";
 import { AuditTrail } from "./components/AuditTrail";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindingDetail, forgetRevocations } from "./components/FindingDetail";
 import { FindingsList } from "./components/FindingsList";
 import { SummaryBand } from "./components/SummaryBand";
@@ -129,16 +130,18 @@ export function App() {
   const list = (
     <FindingsList findings={findings} selectedId={selectedId} onSelect={setSelectedId} error={loadError} onRetry={refresh} />
   );
+  // Keyed by finding, so picking another finding also clears an error from the previous one.
   const detail = selected && (
-    <FindingDetail
-      key={selected.id}
-      finding={selected}
-      trace={traces[selected.id]}
-      auditEntry={auditFor}
-      dataVersion={dataVersion}
-      onInvestigate={() => runAgent(selected.id)}
-      onDecide={(decision, reviewer, note) => decide(selected.id, decision, reviewer, note)}
-    />
+    <ErrorBoundary key={selected.id} title={`Couldn't show the finding for ${selected.principalName}`}>
+      <FindingDetail
+        finding={selected}
+        trace={traces[selected.id]}
+        auditEntry={auditFor}
+        dataVersion={dataVersion}
+        onInvestigate={() => runAgent(selected.id)}
+        onDecide={(decision, reviewer, note) => decide(selected.id, decision, reviewer, note)}
+      />
+    </ErrorBoundary>
   );
 
   return (

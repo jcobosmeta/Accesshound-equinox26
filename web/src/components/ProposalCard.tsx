@@ -156,7 +156,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
                 name="note"
                 label="Note for the audit trail"
                 optional
-                multiline
+                maxLength={280}
                 value={note}
                 onChangeValue={setNote}
                 fullWidth
