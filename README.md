@@ -14,10 +14,10 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
 2. **Detect.** Find the outliers:
    - access none of your peers have
    - leftovers from a previous role
-   - risky combinations, like "creates suppliers and approves payments"
-   - a badge swipe in Madrid at the same time as a VPN login from abroad
-3. **Investigate.** For each finding, an agent uses tools to check the HR record, group memberships and badge log, then explains it in plain language:
-   *"Patricia moved from Marketing to Design in March and still has Marketing's Firebase access."*
+   - risky combinations, like holding both Firebase and Azure admin
+   - a work phone registering in Madrid while the VPN login comes from abroad
+3. **Investigate.** For each finding, an agent uses tools to check the HR record, group memberships and device log, then explains it in plain language:
+   *"Patricia pasó a Diseño en marzo y sigue teniendo VPN DEMO y Firebase de Marketing."*
 4. **Decide.** The agent proposes **revoke** or **keep**. A human approves or rejects it, and every decision is written to an audit trail, ready for NIS2.
 
 ```
@@ -33,17 +33,17 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
 
 ## Demo scenario
 
-A fake company of 24 people, with 3 planted access problems:
+A fake company, FCYBERL, built from the Future Cybersecurity Lab team: 24 people (real GitHub names and photos, invented roles) and 1 service account. The UI and the agent's output are in Spanish. There are 3 planted access problems:
 
 | # | Problem | What gives it away |
 |---|---------|--------------------|
-| 1 | Role-change leftover | Moved from Marketing to Design and still has Marketing's Firebase access |
-| 2 | Toxic combination | Can administer both Firebase and Azure (separation of duties) |
-| 3 | Impossible travel | Badge swipe in Madrid while the VPN login comes from abroad |
+| 1 | Role-change leftover | Patricia moved from Marketing to Design and still has Marketing's VPN DEMO and Firebase |
+| 2 | Toxic combination | Daniel has Firebase and Azure admin; the Azure access came from a temporary ticket that expired |
+| 3 | Impossible travel | Carlos's phone registered in Madrid, and 19 minutes later their VPN login came from Lagos |
 
-The 5-minute demo runs on that data end to end. AccessHound maps the access and flags the three problems. The agent investigates each one and explains it. A person approves or rejects each proposal, and the audit trail fills in.
+The 5-minute demo runs on that data end to end ([docs/DEMO.md](docs/DEMO.md)). AccessHound maps the access and flags the problems. The agent investigates each one and explains it. A person approves or rejects each proposal, the audit trail fills in, and the risk map calms down.
 
-There is also a fourth, decoy case: Marcos, on the AI team, has a Descodificador DEMO that none of their peers have. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
+There is also a fourth, decoy case: Marcos, on the AI team, is the only one with a Descodificador DEMO. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
 
 ## Architecture
 
@@ -62,16 +62,22 @@ server/src/
     live.ts         Claude agent (SDK tool runner); finishes by calling submit_proposal
     replay.ts       scripted agent that calls the same tools on the same data — no API key needed
   store.ts          in-memory state; applies approved actions; writes the audit trail (data/audit.jsonl)
+  risk.ts           risk score per person and account for the risk map; drops once findings are approved
   audit-export.ts   the audit trail as CSV or JSON for download
   index.ts          Express API; also serves web/dist when it has been built
 
 web/src/
-  App.tsx           app shell and state: findings, agent traces, decisions, reset
+  App.tsx           app shell and state: three views (risk map, findings, audit), agent traces, decisions, reset;
+                    investigations are queued, 4 at a time
   api.ts            typed API client; investigate() reads the agent's SSE stream
   present.tsx       labels, icons and colours for findings, statuses and decisions
+  usePrincipal.ts   loads a person's access and remembers what was revoked
   components/
-    FindingsList    findings by priority: needs a decision, then open, then decided;
-                    "Investigate all" queues every open finding, 4 investigations at a time
+    OrgRiskGraph    the whole organisation as a graph, coloured by risk; click someone to inspect them
+    PrincipalInspector  one person's access map, findings and investigations, opened from the risk map
+    AnalysesView    analyses: each one lists the findings with the agent's proposal and your decision;
+                    "Investigar todos" runs the agent on all of them
+    SummaryBand     company snapshot and risk and decision counts
     FindingDetail   rule facts, access map, agent investigation and proposal for one finding
     AccessGraph     person → groups → entitlements in three columns; flagged paths in red,
                     revoked paths dashed after approval; stacks vertically on mobile

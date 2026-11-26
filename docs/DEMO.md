@@ -1,6 +1,6 @@
 # AccessHound demo run sheet
 
-A 5-minute demo: three cases end to end, the audit trail, and a one-line close. Live investigations take 7–17 seconds each, so talk over the agent's notes while it works.
+A 5-minute demo: the risk map, three cases end to end, the audit trail, then back to the risk map to show it calmer. Stage directions are in English; what to say is in Spanish, like the app. Live investigations take 7–17 seconds each.
 
 ## Before you go on
 
@@ -11,51 +11,50 @@ Do these 15 minutes before, on the machine you present from.
   ```bash
   npm run build && npm start      # UI and API on http://localhost:8787
   ```
-- [ ] Open http://localhost:8787. The header must say **Live agent**. If it says **Replay agent**, the key wasn't picked up: check `server/.env` and restart.
-- [ ] The browser window is at least 1280px wide, or zoomed to 90%. Below 1024px the findings list moves above the detail, so you lose the side-by-side view.
-- [ ] Run one case, approve it, then type your name as **Reviewer** so it's pre-filled. Then click **Reset demo** and **Reset** in the dialog.
-- [ ] Quick rehearsal of Patricia (below), then **Reset demo** again.
+- [ ] Open http://localhost:8787. The header must say **Agente en vivo**. If it says **Agente en reproducción**, the key wasn't picked up: check `server/.env` and restart.
+- [ ] The browser window is at least 1280px wide, or zoomed to 90%, so the risk map and the findings table have room.
+- [ ] Run one case and approve it, typing your name as **Revisor** so it's pre-filled. Then click **Restablecer** and **Restablecer** again in the dialog.
+- [ ] Quick rehearsal of Patricia (below), then **Restablecer** again.
 - [ ] Turn off notifications, close other tabs, and set the font size so the back row can read it.
 
 ## The script
 
 | Time | What you click | What you say |
 |---|---|---|
-| **0:00** | Nothing. Show the page. | "Every company hands out hundreds of keys: app accounts, admin groups, VPN, badges that open doors. Nobody tracks who still has which. AccessHound maps all of it in one graph, rules flag what looks wrong, and an AI agent investigates each finding so a person can decide." |
-| **0:20** | Point at the band at the top and the list. | "This is FCYBERL: 24 people, 1 service account, 11 kinds of access. The rules found four problems, sorted by what needs attention." |
-| **0:35** | Click **Patricia Román Castro** (Role-change leftover). | "Patricia moved from Marketing to Design in March." |
-| **0:45** | Scroll to **Access map**. Hover **Firebase de Marketing**. | "Here's everything they can reach, and through which group. In red, what the rules flagged: they can still reach Marketing's Firebase." |
-| **1:05** | Click **Investigate**. | "Now the agent checks it. Its tools are read-only: HR history, groups, tickets, peers, badge and login logs." Read one or two of its notes aloud as they appear. |
-| **1:25** | Point at the proposal card. | "It recommends **revoke**. Look at the evidence: their approval ticket is still open, but it was granted for campaign analytics in Marketing, a job they no longer have. Nobody in Design has Firebase access." |
-| **1:45** | Click **Approve and revoke**. Scroll up to the map. | "A person decides, not the AI. On approval the change is applied: those paths are now dashed, revoked. Their Design access stays." |
-| **3:05** | Click **Marcos Barba Ballarín** (Peer outlier), then **Investigate**. | "Last one. Marcos is the only person in AI who has a Descodificador DEMO. A naive tool would say revoke." |
-| **3:30** | Point at **Keep**. | "The agent found a ticket approved by the CISO for datacentre on-call, valid until March 2027, so it recommends **keep**. It checks before it accuses anyone." |
-| **3:50** | Click **Approve: keep access**. | "Nothing changes, and the decision is still recorded." |
-| **4:05** | Click **Audit trail** at the top, then **Download CSV**. | "Every decision: what the agent proposed, who approved it, and what actually changed. That's the evidence a NIS2 audit asks for, and here it is as a file you can hand an auditor." |
-| **4:30** | Back to **Findings**. Point at the two you didn't open. | "It also caught Daniel, who can administer both Firebase and Azure, and a login from Lagos 19 minutes after a badge-in in Madrid." |
-| **4:45** | Nothing. | "Rules decide what looks wrong, so nothing is missed. The AI investigates and explains. A person always decides." |
+| **0:00** | Nothing. Show the **Mapa de riesgo**. | «Toda empresa reparte cientos de llaves: cuentas, grupos de administración, VPN, dispositivos. Nadie controla quién sigue teniendo cuáles. AccessHound lo pone todo en un mismo mapa, unas reglas señalan lo que no encaja y un agente de IA lo investiga para que una persona decida.» |
+| **0:25** | Point at the map, then at **Carlos Nieto (98%)**. | «Cada círculo es una persona o cuenta de FCYBERL, con su riesgo. Media del 12 %, y alguien al 98 %.» |
+| **0:40** | **Hallazgos**, then **Empezar análisis**, then **Investigar todos (4)**. | «Las reglas han encontrado cuatro problemas. Lanzo el agente sobre los cuatro a la vez.» |
+| **0:55** | Open **Patricia Román Castro**'s row. Point at the red paths in **Mapa de accesos**. | «Patricia pasó de Marketing a Diseño en marzo. En rojo, lo que ha señalado la regla: sigue teniendo VPN DEMO y Firebase de Marketing.» Read one of the agent's notes aloud as it appears. |
+| **1:20** | Point at the proposal card. | «Recomienda **revocar**. Fijaos en las pruebas: su ticket de Firebase se aprobó para analítica de campañas en Marketing, un puesto que ya no tiene, y nadie en Diseño tiene ese acceso.» |
+| **1:40** | Click **Aprobar y revocar**. Point at the map. | «Decide una persona, no la IA. Al aprobar, el cambio se aplica: esos caminos quedan revocados. Su acceso general se mantiene.» |
+| **2:00** | Open **Carlos Nieto**'s row. | «El móvil de trabajo de Carlos se registró en la sede de Madrid a las 09:12 y, 19 minutos después, hubo un inicio de sesión en la VPN desde Lagos. Una persona no puede estar en los dos sitios.» |
+| **2:25** | Point at **Escalar**, then click **Aprobar y escalar**. | «Propone **escalar**: restablecer las credenciales de la VPN y abrir un incidente. Aprobado, y queda registrado.» |
+| **2:45** | Open **Marcos Barba Ballarín**'s row. | «Marcos es la única persona de IA con un Descodificador DEMO. Una herramienta ingenua diría “revocar”.» |
+| **3:05** | Point at **Mantener**, then click **Aprobar: mantener el acceso**. | «El agente ha encontrado un ticket aprobado por el CISO para las pruebas de modelos sobre dispositivos DEMO, vigente hasta marzo de 2027. Recomienda **mantener**: comprueba antes de acusar. No cambia nada, pero queda registrado.» |
+| **3:30** | **Auditoría**, then **Descargar CSV**. | «Cada decisión: qué propuso el agente, quién lo aprobó y qué cambió realmente. Es la evidencia que pide una auditoría de NIS2, y aquí está como archivo para entregar.» |
+| **3:55** | **Hallazgos**. Point at the one you didn't open. | «También ha encontrado a Daniel Nieto con Firebase y un Azure temporal que caducó hace más de un año: una combinación que rompe la segregación de funciones.» |
+| **4:20** | **Mapa de riesgo**. Point at Carlos, Patricia and Marcos. | «Y el mapa se ha calmado: Carlos, Patricia y Marcos han bajado, porque su acceso ya está revisado y justificado.» |
+| **4:45** | Nothing. | «Las reglas deciden qué no encaja, así que no se escapa nada. La IA investiga y explica. Y siempre decide una persona.» |
 
-**Short on time?** Do Patricia, then Marcos, then the audit trail: it still tells the whole story.
+**Short on time?** Drop Carlos: Patricia, then Marcos, then the audit trail and the risk map still tell the whole story.
 
-**Saving time:** a finding's investigation keeps running when you switch to another one. While you're explaining Patricia's proposal, you can click Marcos and **Investigate**, then come back. By the time you need it, it's done.
-
-**Showing all four?** Click **Investigate all** above the findings list. It runs the agent on every open finding, 4 at a time with the rest shown as **Queued**, and all four are ready in about 20 seconds. Then walk through the proposals instead of waiting on each one. It's also a strong opening for a longer slot.
+**Why "Investigar todos" at the start:** by the time you finish with Patricia, the other three are ready, so you never wait on the agent. If you'd rather show one investigation from the beginning, open Patricia's row and click **Investigar** instead, then use **Investigar todos** after her.
 
 ## If something goes wrong
 
 | What you see | What to do |
 |---|---|
-| The trace says **Live agent unavailable — switching to replay** | Carry on. Replay runs the same read-only lookups on the same data, so the evidence is real. You can mention it: "and there's the safety net." |
-| The agent takes more than 30 seconds | Keep talking over its notes. If it's stuck, click another finding and come back later; the investigation keeps running. |
-| You approved the wrong thing | **Reset demo** (top right), then **Reset**. It restores all data and clears the audit trail. Then redo the case you were on. |
-| A section shows "Couldn't draw…" | Click **Try again**, or pick another finding. |
-| The whole page shows "AccessHound hit a problem" | Click **Reload**. The data lives on the server, so nothing is lost. |
-| The network or gateway is down | Set `AGENT_MODE=replay` in `server/.env` and restart `npm start`. Everything works offline, with the header saying **Replay agent**. |
+| The agent's steps say **El agente en vivo no está disponible: se pasa a reproducción.** | Carry on. Replay mode runs the same read-only lookups on the same data, so the evidence is real. You can mention it: «y ahí está la red de seguridad». |
+| The agent takes more than 30 seconds | Keep talking over its notes, or open another finding and come back; the investigation keeps running. |
+| You approved the wrong thing | **Restablecer** (top right), then **Restablecer** in the dialog. It restores all data and clears the analyses and the audit trail. Redo the case you were on. |
+| A section shows "No se puede…" | Click **Reintentar**, or open another finding. |
+| The whole page shows **AccessHound ha tenido un problema** | Click **Recargar**. The data lives on the server, so nothing is lost. |
+| The network or gateway is down | Set `AGENT_MODE=replay` in `server/.env` and restart `npm start`. Everything works offline, with the header saying **Agente en reproducción**. |
 
 ## Likely questions
 
-- **"What if the AI is wrong?"** It can't change anything: its tools only read. Every change needs a person's approval, and the evidence it cites is on the card to check.
-- **"How do you stop it missing things?"** Detection isn't AI. Fixed rules flag the findings; the agent only investigates what they flag.
-- **"Where does the data come from?"** In this demo, a generated company. In production: HR records, directory groups, SaaS accounts and badge logs, combined into one graph.
-- **"What does it cost?"** About 6 cents per investigation with Claude Opus 5.5, and 7–17 seconds.
-- **"Why not just remove all unusual access?"** Marcos: unusual isn't the same as wrong. The agent looks for the reason before it recommends anything.
+- **«¿Y si la IA se equivoca?»** No puede cambiar nada: sus herramientas solo leen. Todo cambio necesita la aprobación de una persona, y las pruebas que cita están en la tarjeta para comprobarlas.
+- **«¿Cómo sabéis que no se os escapa nada?»** La detección no es IA. Reglas fijas señalan los hallazgos; el agente solo investiga lo que señalan.
+- **«¿De dónde salen los datos?»** En esta demo, de datos generados con el equipo de FCYBERL: los roles y los incidentes son inventados. En producción: RR. HH., grupos del directorio, cuentas SaaS y registros de dispositivos, unidos en un solo grafo.
+- **«¿Cuánto cuesta?»** Unos 6 céntimos por investigación con Claude Opus 5.5, y entre 7 y 17 segundos.
+- **«¿Por qué no quitar sin más todo acceso inusual?»** Marcos: inusual no es lo mismo que indebido. El agente busca el motivo antes de recomendar nada.
