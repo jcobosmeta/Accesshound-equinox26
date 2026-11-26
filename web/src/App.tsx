@@ -27,6 +27,10 @@ import { FindingsList } from "./components/FindingsList";
 import { SummaryBand } from "./components/SummaryBand";
 import { ModeTag } from "./present";
 
+/** Investigations that stream at once; the rest wait in a queue. */
+const MAX_PARALLEL = 4;
+const QUEUED = "Queued: starts when another investigation finishes.";
+
 const Brand = () => (
   <Inline space={8} alignItems="center">
     <IconShieldLockRegular size={28} color={skinVars.colors.brand} />
@@ -72,17 +76,50 @@ export function App() {
     if (findings?.length && !findings.some((f) => f.id === selectedId)) setSelectedId(findings[0]!.id);
   }, [findings, selectedId]);
 
-  const runAgent = React.useCallback(
-    (findingId: string) => {
+  // Investigations go through a queue. Each one holds an open connection while the agent works, and
+  // browsers allow about six per server, so more than MAX_PARALLEL at once would stall the app's own requests.
+  const queue = React.useRef<string[]>([]);
+  const active = React.useRef(0);
+  const [queued, setQueued] = React.useState<ReadonlySet<string>>(new Set());
+  const startQueued = React.useRef(() => {});
+  startQueued.current = () => {
+    while (active.current < MAX_PARALLEL && queue.current.length) {
+      const findingId = queue.current.shift()!;
+      active.current++;
+      setQueued((q) => new Set([...q].filter((id) => id !== findingId)));
       setTraces((t) => ({ ...t, [findingId]: [] }));
       investigate(findingId, undefined, (event) => {
         setTraces((t) => ({ ...t, [findingId]: [...(t[findingId] ?? []), event] }));
         // The first event means the server has marked it as investigating.
         if (event.type === "status" || event.type === "proposal" || event.type === "done") refresh();
+        if (event.type === "done") {
+          active.current--;
+          startQueued.current();
+        }
       });
-    },
-    [refresh]
-  );
+    }
+  };
+
+  const runAgent = React.useCallback((findingIds: string[]) => {
+    const fresh = findingIds.filter((id) => !queue.current.includes(id));
+    queue.current.push(...fresh);
+    setQueued((q) => new Set([...q, ...fresh]));
+    setTraces((t) => ({
+      ...t,
+      ...Object.fromEntries(fresh.map((id) => [id, [{ type: "status", message: QUEUED } as AgentEvent]])),
+    }));
+    startQueued.current();
+  }, []);
+
+  const isRunning = (id: string) => !!traces[id] && !traces[id].some((e) => e.type === "done");
+  const notStarted = findings?.filter((f) => f.status === "open" && !isRunning(f.id)) ?? [];
+  const investigateAll = () => {
+    runAgent(notStarted.map((f) => f.id));
+    openSnackbar({
+      message: `Investigating ${notStarted.length} findings, up to ${MAX_PARALLEL} at a time.`,
+      type: "INFORMATIVE",
+    });
+  };
 
   const decide = React.useCallback(
     async (findingId: string, decision: "approved" | "rejected", reviewer: string, note?: string) => {
@@ -117,6 +154,8 @@ export function App() {
       onAccept: async () => {
         await api.reset();
         forgetRevocations();
+        queue.current = [];
+        setQueued(new Set());
         setTraces({});
         setDataVersion((v) => v + 1);
         await refresh();
@@ -128,7 +167,16 @@ export function App() {
   const auditFor = selected ? audit.filter((e) => e.findingId === selected.id).at(-1) : undefined;
 
   const list = (
-    <FindingsList findings={findings} selectedId={selectedId} onSelect={setSelectedId} error={loadError} onRetry={refresh} />
+    <FindingsList
+      findings={findings}
+      selectedId={selectedId}
+      onSelect={setSelectedId}
+      queued={queued}
+      notStartedCount={notStarted.length}
+      onInvestigateAll={investigateAll}
+      error={loadError}
+      onRetry={refresh}
+    />
   );
   // Keyed by finding, so picking another finding also clears an error from the previous one.
   const detail = selected && (
@@ -138,7 +186,7 @@ export function App() {
         trace={traces[selected.id]}
         auditEntry={auditFor}
         dataVersion={dataVersion}
-        onInvestigate={() => runAgent(selected.id)}
+        onInvestigate={() => runAgent([selected.id])}
         onDecide={(decision, reviewer, note) => decide(selected.id, decision, reviewer, note)}
       />
     </ErrorBoundary>

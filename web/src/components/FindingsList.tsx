@@ -1,12 +1,14 @@
 import {
   BoxedRow,
   BoxedRowList,
+  ButtonLink,
   ButtonPrimary,
   Circle,
   EmptyStateCard,
   Inline,
   SkeletonRow,
   Stack,
+  Tag,
   Text1,
   Title2,
   skinVars,
@@ -33,11 +35,25 @@ interface Props {
   findings?: Finding[];
   selectedId?: string;
   onSelect: (id: string) => void;
+  /** Findings waiting for a free agent slot. */
+  queued: ReadonlySet<string>;
+  /** Open findings the agent hasn't started on; "Investigate all" runs these. */
+  notStartedCount: number;
+  onInvestigateAll: () => void;
   error?: string;
   onRetry: () => void;
 }
 
-export function FindingsList({ findings, selectedId, onSelect, error, onRetry }: Props) {
+export function FindingsList({
+  findings,
+  selectedId,
+  onSelect,
+  queued,
+  notStartedCount,
+  onInvestigateAll,
+  error,
+  onRetry,
+}: Props) {
   if (error && !findings) {
     return (
       <EmptyStateCard
@@ -55,7 +71,18 @@ export function FindingsList({ findings, selectedId, onSelect, error, onRetry }:
 
   return (
     <Stack space={16}>
-      <Title2 as="h2">Findings</Title2>
+      <Title2
+        as="h2"
+        right={
+          notStartedCount > 0 ? (
+            <ButtonLink small onPress={onInvestigateAll}>
+              {`Investigate all (${notStartedCount})`}
+            </ButtonLink>
+          ) : undefined
+        }
+      >
+        Findings
+      </Title2>
       {!findings ? (
         <Stack space={16}>
           {Array.from({ length: 6 }, (_, i) => (
@@ -83,7 +110,13 @@ export function FindingsList({ findings, selectedId, onSelect, error, onRetry }:
                     <Text1 regular color={skinVars.colors.textSecondary}>
                       {label}
                     </Text1>
-                    {f.status !== "open" && <StatusTag status={f.status} small />}
+                    {f.status === "open" && queued.has(f.id) ? (
+                      <Tag type="inactive" small>
+                        Queued
+                      </Tag>
+                    ) : (
+                      f.status !== "open" && <StatusTag status={f.status} small />
+                    )}
                   </Inline>
                 }
                 title={f.principalName}
