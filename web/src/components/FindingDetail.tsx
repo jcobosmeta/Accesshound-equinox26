@@ -15,6 +15,7 @@ import {
   Title3,
   UnorderedList,
   skinVars,
+  useScreenSize,
 } from "@telefonica/mistica";
 import IconAiRegular from "@telefonica/mistica-icons/icon-ai-regular";
 import * as React from "react";
@@ -22,6 +23,7 @@ import { api, type AccessPath, type AgentEvent, type AuditEntry, type Finding, t
 import { findingTypes, formatDate, SeverityTag, StatusTag } from "../present";
 import { AccessGraph } from "./AccessGraph";
 import { AgentTrace } from "./AgentTrace";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { ProposalCard } from "./ProposalCard";
 
 const pathKey = (a: AccessPath) => `${a.group.id}|${a.entitlement.id}`;
@@ -67,6 +69,45 @@ function principalLine(detail: PrincipalDetail) {
     return `Service account · ${detail.profile.description} · created ${formatDate(detail.profile.createdDate)}`;
   const p = detail.profile;
   return `${p.title}, ${p.department} · ${p.homeOffice} · since ${formatDate(p.startDate)}`;
+}
+
+/** Call to action before the agent has run. On phones the button goes below the text instead of squeezing it. */
+function InvestigatePrompt({ onInvestigate }: { onInvestigate: () => void }) {
+  const { isMobile } = useScreenSize();
+  const intro = (
+    <Inline space={16} alignItems="center" expand={1}>
+      <IconAiRegular size={32} color={skinVars.colors.brand} />
+      <Stack space={4}>
+        <Text2 medium>Let the agent check this finding</Text2>
+        <Text1 regular color={skinVars.colors.textSecondary}>
+          It looks up HR records, group memberships, tickets and logs, then recommends revoke, keep or escalate. Its tools are
+          read-only: nothing changes until you approve.
+        </Text1>
+      </Stack>
+    </Inline>
+  );
+  const button = (
+    <ButtonPrimary small onPress={onInvestigate}>
+      Investigate
+    </ButtonPrimary>
+  );
+  return (
+    <Boxed variant="alternative">
+      <Box padding={isMobile ? 16 : 24}>
+        {isMobile ? (
+          <Stack space={16}>
+            {intro}
+            {button}
+          </Stack>
+        ) : (
+          <Inline space={16} alignItems="center" expand={0}>
+            {intro}
+            {button}
+          </Inline>
+        )}
+      </Box>
+    </Boxed>
+  );
 }
 
 interface Props {
@@ -129,7 +170,10 @@ export function FindingDetail({ finding, trace, auditEntry, dataVersion, onInves
       <Stack space={12}>
         <Title2 as="h3">Access map</Title2>
         {detail ? (
-          <AccessGraph detail={detail} removed={removed} flagged={finding.entitlementIds} />
+          // The map is the most custom code on the page; if it breaks, the investigation below still works.
+          <ErrorBoundary title="Couldn't draw the access map">
+            <AccessGraph detail={detail} removed={removed} flagged={finding.entitlementIds} />
+          </ErrorBoundary>
         ) : error ? (
           <Text2 regular color={skinVars.colors.error}>
             Couldn't load {finding.principalName}'s access: {error}
@@ -154,30 +198,16 @@ export function FindingDetail({ finding, trace, auditEntry, dataVersion, onInves
         </Title2>
 
         {trace ? (
-          <AgentTrace events={trace} />
+          <ErrorBoundary title="Couldn't show the agent's steps">
+            <AgentTrace events={trace} />
+          </ErrorBoundary>
         ) : running ? (
           <Inline space={8} alignItems="center">
             <Spinner size={16} />
             <Text2 regular>The agent is investigating…</Text2>
           </Inline>
         ) : !finding.proposal ? (
-          <Boxed variant="alternative">
-            <Box padding={24}>
-              <Inline space={16} alignItems="center" expand={1}>
-                <IconAiRegular size={32} color={skinVars.colors.brand} />
-                <Stack space={4}>
-                  <Text2 medium>Let the agent check this finding</Text2>
-                  <Text1 regular color={skinVars.colors.textSecondary}>
-                    It looks up HR records, group memberships, tickets and logs, then recommends revoke, keep or escalate. Its
-                    tools are read-only: nothing changes until you approve.
-                  </Text1>
-                </Stack>
-                <ButtonPrimary small onPress={onInvestigate}>
-                  Investigate
-                </ButtonPrimary>
-              </Inline>
-            </Box>
-          </Boxed>
+          <InvestigatePrompt onInvestigate={onInvestigate} />
         ) : null}
 
         {finding.proposal && !running && (

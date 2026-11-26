@@ -105,7 +105,23 @@ npm start            # then the API serves the UI too, on http://localhost:8787
 npm run detect       # print the findings to the terminal
 ```
 
-Set `ANTHROPIC_API_KEY` to use the live agent. Without it, everything runs in replay mode. The other settings are in [`.env.example`](.env.example).
+### Live agent
+
+Without a key, everything runs in replay mode. To use the live agent, copy [`.env.example`](.env.example) to `server/.env`, which is gitignored and loaded on startup, and set `ANTHROPIC_API_KEY`. Then check the setup before a demo:
+
+```bash
+npm run check-agent  # one small request with the agent's settings; says what to fix if it fails
+```
+
+To see how the live agent does on every case, for example after changing its prompt in `server/src/agent/live.ts`:
+
+```bash
+npm run eval-agent -- my-label   # all findings in parallel, about $0.35 in total
+```
+
+It checks each proposal against the expected outcome for the planted case: the decision and the key actions. It also flags redundant actions and proposals too long for the card. It prints every proposal and saves the run to `server/data/agent-evals/` for comparison. It uses its own copy of the demo data, so the running server isn't affected.
+
+**Through a LiteLLM proxy:** set `ANTHROPIC_BASE_URL` to the proxy's URL and `ANTHROPIC_API_KEY` to the proxy key. If the proxy uses its own model names, set `AGENT_MODEL` to the one it uses for Claude Opus 5.5. If requests fail with an error about fallbacks or a beta, set `AGENT_FALLBACKS=off`. With a proxy URL set, the agent sends the full conversation every turn rather than using message threads, which only Anthropic's API supports. If the live agent fails during a demo, the server switches to replay and logs the error.
 
 ## API
 

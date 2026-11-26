@@ -1,3 +1,4 @@
+import "./env.js"; // must stay first
 import express from "express";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";

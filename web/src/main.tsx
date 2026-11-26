@@ -3,6 +3,7 @@ import { getTelefonicaSkin, skinVars, ThemeContextProvider } from "@telefonica/m
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const theme = {
   skin: getTelefonicaSkin(),
@@ -25,7 +26,9 @@ createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ThemeContextProvider theme={theme}>
       <GlobalStyles />
-      <App />
+      <ErrorBoundary fullScreen>
+        <App />
+      </ErrorBoundary>
     </ThemeContextProvider>
   </React.StrictMode>
 );
