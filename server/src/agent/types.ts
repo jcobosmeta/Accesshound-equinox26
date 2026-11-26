@@ -4,9 +4,15 @@ export const ProposalSchema = z.object({
   decision: z
     .enum(["revoke", "keep", "escalate"])
     .describe("revoke = remove the access; keep = access is justified; escalate = possible security incident, hand to the security team"),
-  headline: z.string().describe("One sentence a manager understands, e.g. 'Marta moved to Marketing in March and can still approve SAP payments.'"),
-  explanation: z.string().describe("2-4 sentences in plain language: what you found, why it matters, why you recommend this decision."),
-  evidence: z.array(z.string()).describe("Concrete facts you verified with tools, each with dates/ids, e.g. 'HR: transferred Finance → Marketing on 2026-03-02'."),
+  headline: z
+    .string()
+    .describe("One sentence of at most 25 words a manager understands, e.g. 'Marta moved to Marketing in March and can still approve SAP payments.'"),
+  explanation: z
+    .string()
+    .describe("At most four short sentences in plain language: what you found, why it matters, why you recommend this decision."),
+  evidence: z
+    .array(z.string())
+    .describe("Concrete facts you verified with tools, one per item, with names and ids, e.g. 'HR: transferred Finance → Marketing on 2 Mar 2026'."),
   actions: z
     .array(
       z.object({

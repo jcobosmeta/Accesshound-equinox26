@@ -14,6 +14,7 @@
     "start": "npm start --workspace server",
     "detect": "npm run detect --workspace server",
     "check-agent": "npm run check-agent --workspace server",
+    "eval-agent": "npm run eval-agent --workspace server --",
     "typecheck": "npm run typecheck --workspace server && npm run typecheck --workspace web"
   },
   "devDependencies": {
