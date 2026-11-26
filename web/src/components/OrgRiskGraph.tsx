@@ -53,7 +53,7 @@ interface SectorLabel {
   flaggedCount: number;
 }
 
-const DEPT_ORDER = ["Finance", "Marketing", "Engineering", "IT"];
+const DEPT_ORDER = ["Finanzas", "Marketing", "Ingeniería", "TI"];
 
 // Hierarchy layout constants
 const H_OUTER_X = 40;
@@ -553,11 +553,11 @@ export function OrgRiskGraph({
     return (
       <EmptyStateCard
         asset={<IconErrorRegular size="100%" color={skinVars.colors.error} />}
-        title="Can't load the organization risk map"
-        description={`${error}. Is the server running on port 8787?`}
+        title="No se puede cargar el mapa de riesgo de la organización"
+        description={`${error}. ¿Está el servidor en marcha en el puerto 8787?`}
         button={
           <ButtonPrimary small onPress={onRetry}>
-            Try again
+            Reintentar
           </ButtonPrimary>
         }
       />
@@ -625,8 +625,8 @@ export function OrgRiskGraph({
             <Inline space={12} alignItems="center" wrap verticalSpace={8}>
               <input
                 type="search"
-                aria-label="Search users in map"
-                placeholder="Search user, role, department…"
+                aria-label="Buscar usuarios en el mapa"
+                placeholder="Buscar usuario, puesto, departamento…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 style={{
@@ -636,7 +636,7 @@ export function OrgRiskGraph({
               />
 
               <select
-                aria-label="Filter users by risk"
+                aria-label="Filtrar usuarios por riesgo"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as FilterMode)}
                 style={{
@@ -645,13 +645,13 @@ export function OrgRiskGraph({
                   paddingRight: 28,
                 }}
               >
-                <option value="all">{`Filter: All (${principalTotal})`}</option>
-                <option value="flagged">{`Filter: At risk (${flaggedTotal})`}</option>
-                <option value="elevated">{`Filter: >35% (${elevatedTotal})`}</option>
+                <option value="all">{`Filtro: todos (${principalTotal})`}</option>
+                <option value="flagged">{`Filtro: en riesgo (${flaggedTotal})`}</option>
+                <option value="elevated">{`Filtro: >35% (${elevatedTotal})`}</option>
               </select>
 
               <select
-                aria-label="Select map view mode"
+                aria-label="Elegir la vista del mapa"
                 value={layout}
                 onChange={(e) => setLayout(e.target.value as LayoutMode)}
                 style={{
@@ -660,15 +660,15 @@ export function OrgRiskGraph({
                   paddingRight: 28,
                 }}
               >
-                <option value="radial">View: Risk map</option>
-                <option value="hierarchy">View: Hierarchy</option>
+                <option value="radial">Vista: mapa de riesgo</option>
+                <option value="hierarchy">Vista: jerarquía</option>
               </select>
             </Inline>
 
             <Inline space={16} alignItems="center" wrap verticalSpace={8}>
               {summary && (
                 <Text1 regular color="#94A3B8">
-                  {`${summary.company} · Avg ${graph.avgRisk}% · Peak ${graph.maxRisk}%`}
+                  {`${summary.company} · Media ${graph.avgRisk}% · Máximo ${graph.maxRisk}%`}
                 </Text1>
               )}
               <Inline space={12} alignItems="center" wrap verticalSpace={4}>
@@ -710,7 +710,7 @@ export function OrgRiskGraph({
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
           role="img"
-          aria-label="Dark-mode interactive organization hierarchy and risk map"
+          aria-label="Mapa interactivo de la jerarquía y el riesgo de la organización"
           style={{ display: "block", touchAction: "none" }}
         >
           <defs>
@@ -736,7 +736,7 @@ export function OrgRiskGraph({
                 <line x1={R_CX} y1={R_CY - 375} x2={R_CX} y2={R_CY + 375} stroke="#162033" strokeWidth={1} strokeDasharray="3 8" />
 
                 {computed.sectors.map((sec) => {
-                  const acc = departmentAccent[sec.dept] ?? departmentAccent.Executive!;
+                  const acc = departmentAccent[sec.dept] ?? departmentAccent["Dirección"]!;
                   const badgeW = 196;
                   const bx = sec.align === "start" ? sec.x : sec.x - badgeW;
                   return (
@@ -763,7 +763,7 @@ export function OrgRiskGraph({
                         fontWeight={700}
                         fill={sec.flaggedCount > 0 ? "#FF8592" : "#94A3B8"}
                       >
-                        {`avg ${sec.avgRisk}%${sec.flaggedCount > 0 ? ` · ${sec.flaggedCount}!` : ""}`}
+                        {`media ${sec.avgRisk}%${sec.flaggedCount > 0 ? ` · ${sec.flaggedCount}!` : ""}`}
                       </text>
                     </g>
                   );
@@ -774,7 +774,7 @@ export function OrgRiskGraph({
             {/* Department column frames (Hierarchy mode) */}
             {layout === "hierarchy" &&
               computed.columns.map((col) => {
-                const accent = departmentAccent[col.dept] ?? departmentAccent.Executive!;
+                const accent = departmentAccent[col.dept] ?? departmentAccent["Dirección"]!;
                 return (
                   <g key={col.dept}>
                     <rect
@@ -801,7 +801,7 @@ export function OrgRiskGraph({
                       fontWeight={700}
                       fill={col.flaggedCount > 0 ? "#FF8592" : accent.text}
                     >
-                      {`avg ${col.avgRisk}%${col.flaggedCount > 0 ? ` · ${col.flaggedCount}!` : ""}`}
+                      {`media ${col.avgRisk}%${col.flaggedCount > 0 ? ` · ${col.flaggedCount}!` : ""}`}
                     </text>
                   </g>
                 );
@@ -906,7 +906,7 @@ export function OrgRiskGraph({
                           {node.name}
                         </text>
                         <text x={pos.cx} y={pos.cy + 5} textAnchor="middle" fontSize={10} fill="#94A3B8">
-                          Avg org risk
+                          Riesgo medio
                         </text>
                         <text x={pos.cx} y={pos.cy + 27} textAnchor="middle" fontSize={18} fontWeight={800} fill={pal.stroke}>
                           {node.riskScore}%
@@ -956,7 +956,7 @@ export function OrgRiskGraph({
                   const ringR = r + 5;
                   const circ = 2 * Math.PI * ringR;
                   const filled = (node.riskScore / 100) * circ;
-                  const deptAcc = departmentAccent[node.department] ?? departmentAccent.Executive!;
+                  const deptAcc = departmentAccent[node.department] ?? departmentAccent["Dirección"]!;
                   const labelW = Math.max(114, Math.min(174, node.name.length * 6.8 + 48));
 
                   return (
@@ -1055,7 +1055,7 @@ export function OrgRiskGraph({
 
                 // HIERARCHY DARK CARD
                 const isSvc = node.kind === "service";
-                const deptAcc = departmentAccent[node.department] ?? departmentAccent.Executive!;
+                const deptAcc = departmentAccent[node.department] ?? departmentAccent["Dirección"]!;
                 const fill = isSelected ? "#13294B" : isActiveFlagged ? pal.bg : isSvc ? "#1A1430" : "#111827";
                 const borderColor = isSelected
                   ? "#3898FF"
@@ -1119,7 +1119,7 @@ export function OrgRiskGraph({
                       {truncate(node.name, 18)}
                     </text>
                     <text x={pos.x + 50} y={pos.y + (isSvc ? 39 : 43)} fontSize={10.5} fill="#94A3B8">
-                      {node.status === "left" ? `Left · ${truncate(node.subtitle, 14)}` : truncate(node.subtitle, 20)}
+                      {node.status === "left" ? `Baja · ${truncate(node.subtitle, 14)}` : truncate(node.subtitle, 20)}
                     </text>
 
                     <NodeRiskRing cx={pos.x + pos.w - 26} cy={pos.cy} r={17.5} score={node.riskScore} stroke={pal.stroke} />
@@ -1158,10 +1158,10 @@ export function OrgRiskGraph({
                   {`${hoveredNode.subtitle} · ${hoveredNode.department}`}
                 </Text1>
                 <Text2 medium color={pal.stroke}>
-                  {`${hoveredNode.riskScore}% risk`}
+                  {`${hoveredNode.riskScore}% de riesgo`}
                 </Text2>
                 <Text1 regular color="#94A3B8">
-                  {`${hoveredNode.entitlementCount} services · ${linkCount} links · Click to inspect`}
+                  {`${hoveredNode.entitlementCount} servicios · ${linkCount} vínculos · Clic para inspeccionar`}
                 </Text1>
               </Inline>
             </div>
@@ -1182,7 +1182,7 @@ export function OrgRiskGraph({
           }}
         >
           <Text1 regular color="#94A3B8">
-            Drag to pan · Ctrl/⌘ + scroll to zoom · Click any user for Access Map &amp; Investigation
+            Arrastra para moverte · Ctrl/⌘ + rueda para hacer zoom · Haz clic en un usuario para ver su mapa de accesos y la investigación
           </Text1>
         </div>
       </div>

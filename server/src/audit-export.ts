@@ -2,20 +2,22 @@
 
 import type { AuditEntry } from "./store.js";
 
+const agentDecision: Record<AuditEntry["agentDecision"], string> = { revoke: "Revocar", keep: "Mantener", escalate: "Escalar" };
+
 const columns: { header: string; value: (e: AuditEntry) => string }[] = [
-  { header: "Entry", value: (e) => e.id },
-  { header: "Time (UTC)", value: (e) => e.time },
-  { header: "Finding", value: (e) => e.findingTitle },
-  { header: "Finding ID", value: (e) => e.findingId },
-  { header: "Person or account", value: (e) => e.principalName },
-  { header: "Principal ID", value: (e) => e.principalId },
-  { header: "Agent proposed", value: (e) => e.agentDecision },
-  { header: "Agent summary", value: (e) => e.agentHeadline },
-  { header: "Agent mode", value: (e) => e.agentMode },
-  { header: "Decision", value: (e) => e.humanDecision },
-  { header: "Reviewer", value: (e) => e.reviewer },
-  { header: "Note", value: (e) => e.note ?? "" },
-  { header: "Changes applied", value: (e) => e.applied.join("; ") },
+  { header: "Entrada", value: (e) => e.id },
+  { header: "Hora (UTC)", value: (e) => e.time },
+  { header: "Hallazgo", value: (e) => e.findingTitle },
+  { header: "ID del hallazgo", value: (e) => e.findingId },
+  { header: "Persona o cuenta", value: (e) => e.principalName },
+  { header: "ID del usuario", value: (e) => e.principalId },
+  { header: "Propuesta del agente", value: (e) => agentDecision[e.agentDecision] },
+  { header: "Resumen del agente", value: (e) => e.agentHeadline },
+  { header: "Modo del agente", value: (e) => (e.agentMode === "live" ? "En vivo" : "Reproducción") },
+  { header: "Decisión", value: (e) => (e.humanDecision === "approved" ? "Aprobada" : "Rechazada") },
+  { header: "Revisor", value: (e) => e.reviewer },
+  { header: "Nota", value: (e) => e.note ?? "" },
+  { header: "Cambios aplicados", value: (e) => e.applied.join("; ") },
 ];
 
 const BOM = String.fromCharCode(0xfeff);
@@ -33,4 +35,4 @@ export function auditJson(entries: AuditEntry[], company: string): string {
   return JSON.stringify({ company, exportedAt: new Date().toISOString(), entries }, null, 2);
 }
 
-export const auditFileName = (ext: "csv" | "json") => `accesshound-audit-${new Date().toISOString().slice(0, 10)}.${ext}`;
+export const auditFileName = (ext: "csv" | "json") => `accesshound-auditoria-${new Date().toISOString().slice(0, 10)}.${ext}`;

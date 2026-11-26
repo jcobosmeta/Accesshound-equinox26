@@ -94,7 +94,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
   if (highEnts.length > 0) {
     const pts = Math.min(30, highEnts.length * 11);
     factors.push({
-      label: `${highEnts.length} high-risk entitlement${highEnts.length > 1 ? "s" : ""} (${highEnts.map((e) => e.name).join(", ")})`,
+      label: `${highEnts.length} ${highEnts.length > 1 ? "permisos" : "permiso"} de riesgo alto (${highEnts.map((e) => e.name).join(", ")})`,
       points: pts,
       severity: highEnts.length >= 2 ? "high" : "medium",
     });
@@ -102,7 +102,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
   if (medEnts.length > 0) {
     const pts = Math.min(12, medEnts.length * 4);
     factors.push({
-      label: `${medEnts.length} medium-risk entitlement${medEnts.length > 1 ? "s" : ""}`,
+      label: `${medEnts.length} ${medEnts.length > 1 ? "permisos" : "permiso"} de riesgo medio`,
       points: pts,
       severity: "low",
     });
@@ -110,7 +110,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
   if (lowEnts.length > 0) {
     const pts = Math.min(5, lowEnts.length);
     factors.push({
-      label: `${lowEnts.length} baseline entitlement${lowEnts.length > 1 ? "s" : ""}`,
+      label: `${lowEnts.length} ${lowEnts.length > 1 ? "permisos básicos" : "permiso básico"}`,
       points: pts,
       severity: "low",
     });
@@ -119,7 +119,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
   // Holding both high-risk devices and high-risk cloud/VPN admin rights widens blast radius.
   if (highEnts.some((e) => e.physical) && highEnts.some((e) => !e.physical)) {
     factors.push({
-      label: "Combined device & cloud high-privilege access",
+      label: "Privilegios altos combinados en dispositivos y en la nube",
       points: 3,
       severity: "medium",
     });
@@ -128,7 +128,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
   if (person) {
     const isManager = repo.c.people.some((p) => p.managerId === person.id);
     if (isManager && person.status === "active") {
-      factors.push({ label: "Department head / approval scope", points: 3, severity: "low" });
+      factors.push({ label: "Jefe de departamento / capacidad de aprobación", points: 3, severity: "low" });
     }
 
     const owned = repo.c.serviceAccounts.filter((s) => s.ownerId === person.id);
@@ -136,13 +136,13 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
       if (person.status === "left") {
         const orphanedHigh = owned.some((s) => repo.accessOf(s.id).some((a) => a.entitlement.risk === "high"));
         factors.push({
-          label: `Still listed as owner of ${owned.map((s) => s.name).join(", ")}`,
+          label: `Aún figura como propietario de ${owned.map((s) => s.name).join(", ")}`,
           points: orphanedHigh ? 14 : 4,
           severity: orphanedHigh ? "medium" : "low",
         });
       } else {
         factors.push({
-          label: `Owns service account ${owned.map((s) => s.name).join(", ")}`,
+          label: `Propietario de la cuenta de servicio ${owned.map((s) => s.name).join(", ")}`,
           points: 3,
           severity: "low",
         });
@@ -150,12 +150,12 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
     }
 
     if (person.status === "active" && repo.loginEvents(person.id).length > 0) {
-      factors.push({ label: "Recent remote VPN activity", points: 2, severity: "low" });
+      factors.push({ label: "Actividad reciente por VPN remota", points: 2, severity: "low" });
     }
   }
 
   if (service) {
-    factors.push({ label: "Non-human service account credential", points: 5, severity: "low" });
+    factors.push({ label: "Credencial de cuenta de servicio no humana", points: 5, severity: "low" });
     const owner = repo.person(service.ownerId);
     const crossDeptGroups = access
       .map((a) => a.group)
@@ -163,7 +163,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
     if (crossDeptGroups.length > 0) {
       const names = [...new Set(crossDeptGroups.map((g) => g.department))];
       factors.push({
-        label: `Cross-department automation into ${names.join(", ")}`,
+        label: `Automatización con acceso a otros departamentos: ${names.join(", ")}`,
         points: 4,
         severity: "low",
       });
@@ -181,7 +181,7 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
       // "escalate" was approved (e.g. Carlos's impossible travel): incident opened & contained.
       if (f.proposal?.decision === "escalate") {
         factors.push({
-          label: `Contained incident (${f.type.replace(/_/g, " ")}) — escalated for monitoring`,
+          label: "Incidente contenido: escalado para seguimiento",
           points: 12,
           severity: "medium",
         });
@@ -191,40 +191,40 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
 
     switch (f.type) {
       case "leaver_access": {
-        factors.push({ label: "Active access retained after leaving company", points: 48, severity: "high" });
+        factors.push({ label: "Conserva accesos activos tras dejar la empresa", points: 48, severity: "high" });
         const afterExit = person?.endDate ? repo.badgeEvents(principalId, person.endDate).filter((e) => e.result === "granted") : [];
         if (afterExit.length > 0) {
-          factors.push({ label: "Corporate device used after departure date", points: 10, severity: "high" });
+          factors.push({ label: "Dispositivo corporativo usado tras la fecha de baja", points: 10, severity: "high" });
         }
         break;
       }
       case "impossible_travel":
-        factors.push({ label: "Impossible travel anomaly (possible credential compromise)", points: 78, severity: "high" });
+        factors.push({ label: "Viaje imposible (posibles credenciales comprometidas)", points: 78, severity: "high" });
         break;
       case "orphaned_service_account": {
-        factors.push({ label: "Orphaned privileged service account (owner departed)", points: 55, severity: "high" });
+        factors.push({ label: "Cuenta de servicio privilegiada huérfana (el propietario se fue)", points: 55, severity: "high" });
         if (repo.loginEvents(principalId).length > 0) {
-          factors.push({ label: "Unowned service account actively authenticating", points: 6, severity: "high" });
+          factors.push({ label: "Cuenta de servicio sin propietario que sigue autenticándose", points: 6, severity: "high" });
         }
         break;
       }
       case "toxic_combination": {
-        factors.push({ label: "Separation-of-duties violation (Firebase + Azure admin)", points: 47, severity: "high" });
+        factors.push({ label: "Incumple la segregación de funciones (Firebase + Azure)", points: 47, severity: "high" });
         const expiredTicket = repo.ticketsFor(principalId).some((t) => t.expiresDate && t.expiresDate < repo.c.asOf);
         if (expiredTicket) {
-          factors.push({ label: "Temporary exception ticket expired", points: 6, severity: "high" });
+          factors.push({ label: "Ha caducado el ticket de excepción temporal", points: 6, severity: "high" });
         }
         break;
       }
       case "role_change_leftover": {
-        factors.push({ label: "Unrevoked access from previous department", points: 51, severity: "high" });
+        factors.push({ label: "Accesos sin revocar del departamento anterior", points: 51, severity: "high" });
         if (highEnts.some((e) => f.entitlementIds.includes(e.id))) {
-          factors.push({ label: "Leftover access includes high-risk privilege", points: 5, severity: "high" });
+          factors.push({ label: "Los accesos sobrantes incluyen privilegios de riesgo alto", points: 5, severity: "high" });
         }
         break;
       }
       case "peer_outlier":
-        factors.push({ label: "High-risk entitlement held by none of department peers", points: 29, severity: "medium" });
+        factors.push({ label: "Permiso de riesgo alto que no tiene ningún compañero del departamento", points: 29, severity: "medium" });
         break;
     }
   }
@@ -313,7 +313,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       from: p.managerId ?? ORG_ROOT_ID,
       to: p.id,
       kind: "hierarchy",
-      label: p.managerId ? "Reports to" : `${p.department} lead`,
+      label: p.managerId ? "Depende de" : `Responsable de ${p.department}`,
       dashed: p.status === "left",
       risk: p.status === "left" && activeFindings.length > 0 ? "high" : undefined,
     });
@@ -336,7 +336,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       kind: "service",
       name: s.name,
       subtitle: s.description,
-      department: owner?.department ?? "IT",
+      department: owner?.department ?? "TI",
       status: "service",
       managerId: s.ownerId,
       riskScore: risk.score,
@@ -355,7 +355,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       from: s.ownerId,
       to: s.id,
       kind: "owns",
-      label: orphaned ? "Orphaned owner" : "Owns service account",
+      label: orphaned ? "Propietario dado de baja" : "Propietario de la cuenta de servicio",
       dashed: orphaned,
       risk: orphaned && activeFindings.length > 0 ? "high" : undefined,
     });
@@ -373,8 +373,8 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
     id: ORG_ROOT_ID,
     kind: "org",
     name: c.name,
-    subtitle: `${c.people.filter((p) => p.status === "active").length} active · ${c.serviceAccounts.length} service accounts`,
-    department: "Executive",
+    subtitle: `${c.people.filter((p) => p.status === "active").length} activos · ${c.serviceAccounts.length} cuentas de servicio`,
+    department: "Dirección",
     status: "org",
     riskScore: avgRisk,
     riskLevel: riskLevelFor(maxRisk >= 80 ? Math.max(avgRisk, 45) : avgRisk),
@@ -395,7 +395,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
     const hasHighRisk = g.entitlementIds.some((eid) => repo.entitlement(eid)?.risk === "high");
 
     // Cross-department access: member is in a group belonging to a DIFFERENT department (or DEMO lab from outside IT)
-    const targetDept = g.department ?? (g.id === "g-demo-lab" ? "IT" : undefined);
+    const targetDept = g.department ?? (g.id === "g-demo-lab" ? "TI" : undefined);
     const targetHead = targetDept ? headByDept.get(targetDept) : undefined;
 
     for (const pid of members) {
@@ -449,7 +449,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       from: sponsor,
       to: t.principalId,
       kind: "ticket_approval",
-      label: `${t.id}: ${entName}${expired ? " (expired)" : ""}`,
+      label: `${t.id}: ${entName}${expired ? " (caducado)" : ""}`,
       risk: expired ? "high" : "low",
       dashed: true,
     });
@@ -462,7 +462,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       from: deptHeads[i]!.id,
       to: deptHeads[i + 1]!.id,
       kind: "peer_mesh",
-      label: "Leadership peer",
+      label: "Compañero de dirección",
     });
   }
 
@@ -473,7 +473,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
         from: team[i]!.id,
         to: team[i + 1]!.id,
         kind: "peer_mesh",
-        label: `${head.department} team`,
+        label: `Equipo de ${head.department}`,
       });
     }
   }

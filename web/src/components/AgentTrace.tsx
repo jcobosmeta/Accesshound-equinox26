@@ -21,14 +21,23 @@ import type { AgentEvent } from "../api";
 
 /** Plain-language names for the agent's read-only tools (server/src/agent/tools.ts). */
 const toolLabels: Record<string, string> = {
-  get_person: "Looked up the HR profile",
-  get_hr_history: "Checked the HR history",
-  get_service_account: "Looked up the service account",
-  list_access: "Listed current access",
-  compare_with_peers: "Compared with peers",
-  get_access_tickets: "Checked access tickets",
-  get_badge_events: "Read the device log",
-  get_login_events: "Read the login log",
+  get_person: "Consultó el perfil de RR. HH.",
+  get_hr_history: "Revisó el historial de RR. HH.",
+  get_service_account: "Consultó la cuenta de servicio",
+  list_access: "Listó los accesos actuales",
+  compare_with_peers: "Comparó con sus compañeros",
+  get_access_tickets: "Revisó los tickets de acceso",
+  get_badge_events: "Leyó el registro de dispositivos",
+  get_login_events: "Leyó el registro de inicios de sesión",
+};
+
+/** Spanish names for the tools' parameters. */
+const inputLabels: Record<string, string> = {
+  person_id: "persona",
+  account_id: "cuenta",
+  principal_id: "usuario",
+  entitlement_id: "permiso",
+  since: "desde",
 };
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -36,7 +45,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 const describeInput = (input: unknown) =>
   input && typeof input === "object"
     ? Object.entries(input as Record<string, unknown>)
-        .map(([k, v]) => `${k.replace(/_/g, " ")}: ${String(v)}`)
+        .map(([k, v]) => `${inputLabels[k] ?? k.replace(/_/g, " ")}: ${String(v)}`)
         .join(" · ")
     : "";
 
@@ -46,27 +55,27 @@ function describeOutput(tool: string, output: unknown): string {
     const n = output.length;
     switch (tool) {
       case "list_access":
-        return plural(n, "entitlement");
+        return plural(n, "permiso");
       case "get_hr_history":
-        return plural(n, "HR event");
+        return plural(n, "evento de RR. HH.", "eventos de RR. HH.");
       case "get_access_tickets":
-        return n ? plural(n, "ticket") : "No tickets";
+        return n ? plural(n, "ticket") : "Sin tickets";
       case "get_badge_events":
-        return plural(n, "device event");
+        return plural(n, "evento de dispositivo", "eventos de dispositivo");
       case "get_login_events":
-        return plural(n, "login");
+        return plural(n, "inicio de sesión", "inicios de sesión");
       default:
-        return plural(n, "record");
+        return plural(n, "registro");
     }
   }
   if (output && typeof output === "object") {
     const o = output as Record<string, unknown>;
     if (tool === "compare_with_peers" && Array.isArray(o.holders))
-      return `${o.holders.length} of ${o.peers} ${o.department} peers hold it`;
+      return `Lo tienen ${o.holders.length} de ${o.peers} compañeros de ${o.department}`;
     if (typeof o.error === "string") return o.error;
     if (typeof o.name === "string") return [o.name, o.title, o.department, o.status].filter(Boolean).join(", ");
   }
-  return "Done";
+  return "Hecho";
 }
 
 function ToolStep({ why, name, input, output }: { why?: string; name: string; input: unknown; output?: unknown }) {
@@ -89,12 +98,12 @@ function ToolStep({ why, name, input, output }: { why?: string; name: string; in
         <Inline space={8} alignItems="center">
           <Text2 regular>{describeOutput(name, output)}</Text2>
           <ButtonLink small onPress={() => setOpen((o) => !o)} aria-expanded={open}>
-            {open ? "Hide data" : "Show data"}
+            {open ? "Ocultar datos" : "Ver datos"}
           </ButtonLink>
         </Inline>
       ) : (
         <Text1 regular color={skinVars.colors.textSecondary}>
-          Waiting for result…
+          Esperando el resultado…
         </Text1>
       )}
       {open && (
@@ -148,11 +157,11 @@ export function AgentTrace({ events }: { events: AgentEvent[] }) {
         {running && <Spinner size={16} />}
         <Text1 regular color={skinVars.colors.textSecondary}>
           {running
-            ? (status?.type === "status" && status.message) || "Starting the agent…"
-            : `Finished after ${plural(toolCalls, "lookup")}. Every lookup is read-only.`}
+            ? (status?.type === "status" && status.message) || "Iniciando el agente…"
+            : `Terminado tras ${plural(toolCalls, "consulta")}. Todas las consultas son de solo lectura.`}
         </Text1>
       </Inline>
-      <Timeline aria-label="Agent steps">
+      <Timeline aria-label="Pasos del agente">
         {/* Mística draws every "completed" item as a check, so finished lookups use "active" to keep
             their icon, a lookup still waiting for its result is "inactive", and only the proposal gets the check. */}
         {steps.map((step, i) => {
@@ -178,7 +187,7 @@ export function AgentTrace({ events }: { events: AgentEvent[] }) {
             case "proposal":
               return (
                 <TimelineItem key={i} state="completed" asset={{ kind: "circled-icon", Icon: IconCheckRegular }}>
-                  <Text2 medium>Submitted a proposal for a human to review</Text2>
+                  <Text2 medium>Envió una propuesta para que la revise una persona</Text2>
                 </TimelineItem>
               );
             case "error":

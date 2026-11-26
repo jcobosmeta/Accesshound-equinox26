@@ -47,7 +47,7 @@ app.get("/api/principals/:id", (req, res) => {
   const { repo } = store;
   const id = req.params.id;
   const kind = repo.principalKind(id);
-  if (!kind) return res.status(404).json({ error: "not found" });
+  if (!kind) return res.status(404).json({ error: "no encontrado" });
   const person = kind === "person" ? repo.person(id)! : undefined;
   const service = kind === "service" ? repo.serviceAccount(id)! : undefined;
   const manager = person?.managerId ? repo.person(person.managerId) : undefined;
@@ -103,7 +103,7 @@ app.get("/api/principals/:id", (req, res) => {
 /** Run the agent on a finding, streaming its steps as Server-Sent Events. */
 app.get("/api/findings/:id/investigate", async (req, res) => {
   const finding = store.finding(req.params.id);
-  if (!finding) return res.status(404).json({ error: "Finding not found (it may already be resolved)." });
+  if (!finding) return res.status(404).json({ error: "Hallazgo no encontrado (puede que ya esté resuelto)." });
 
   res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
   const emit = (e: AgentEvent) => res.write(`data: ${JSON.stringify(e)}\n\n`);
@@ -114,13 +114,13 @@ app.get("/api/findings/:id/investigate", async (req, res) => {
   store.proposals.delete(finding.id);
   let proposal: Proposal | undefined;
   try {
-    emit({ type: "status", message: mode === "live" ? "Agent investigating (live)" : "Agent investigating (replay)" });
+    emit({ type: "status", message: mode === "live" ? "El agente está investigando (en vivo)" : "El agente está investigando (reproducción)" });
     if (mode === "live") {
       try {
         proposal = await investigateLive(store.repo, finding, emit);
       } catch (err) {
         console.error("Live agent failed, falling back to replay:", err);
-        emit({ type: "status", message: "Live agent unavailable — switching to replay." });
+        emit({ type: "status", message: "El agente en vivo no está disponible: se pasa a reproducción." });
         mode = "replay";
       }
     }
@@ -138,7 +138,7 @@ app.get("/api/findings/:id/investigate", async (req, res) => {
 app.post("/api/findings/:id/decision", (req, res) => {
   const { decision, reviewer, note } = req.body ?? {};
   if (decision !== "approved" && decision !== "rejected")
-    return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+    return res.status(400).json({ error: "la decisión debe ser 'approved' o 'rejected'" });
   try {
     res.json(store.decide(req.params.id, decision, typeof reviewer === "string" && reviewer ? reviewer : "Reviewer", note));
   } catch (err) {

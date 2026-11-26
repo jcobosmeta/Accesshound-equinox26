@@ -8,7 +8,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 const theme = {
   skin: getTelefonicaSkin(),
   colorScheme: "dark" as const,
-  i18n: { locale: "en-US" as const, phoneNumberFormattingRegionCode: "ES" as const },
+  i18n: { locale: "es-ES" as const, phoneNumberFormattingRegionCode: "ES" as const },
 };
 
 // Telefónica Sans isn't bundled, so fall back to the platform's UI sans-serif.

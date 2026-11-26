@@ -50,22 +50,22 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       const leftover = groupsFor((a) => a.group.department === transfer.fromDepartment);
       const sensitive = access.find((a) => leftover.includes(a.group.id) && a.entitlement.risk === "high")!;
       await run([
-        { say: `Checking ${first}'s HR history to confirm the department move.`, call: ["get_hr_history", { person_id: pid }] },
-        { say: "Now checking what services are still attached to the old role.", call: ["list_access", { principal_id: pid }] },
-        { say: `Do any of ${first}'s new peers have ${sensitive.entitlement.name}?`, call: ["compare_with_peers", { person_id: pid, entitlement_id: sensitive.entitlement.id }] },
-        { say: "Is there a ticket that still justifies it?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: sensitive.entitlement.id }] },
+        { say: `Reviso el historial de RR. HH. de ${first} para confirmar el cambio de departamento.`, call: ["get_hr_history", { person_id: pid }] },
+        { say: "Ahora compruebo qué servicios siguen ligados al puesto anterior.", call: ["list_access", { principal_id: pid }] },
+        { say: `¿Alguno de los nuevos compañeros de ${first} tiene ${sensitive.entitlement.name}?`, call: ["compare_with_peers", { person_id: pid, entitlement_id: sensitive.entitlement.id }] },
+        { say: "¿Hay algún ticket que todavía lo justifique?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: sensitive.entitlement.id }] },
       ]);
       return {
         decision: "revoke",
-        headline: `${first} moved to ${transfer.toDepartment} on ${transfer.date} and still has ${sensitive.entitlement.name} access from ${transfer.fromDepartment}.`,
-        explanation: `${name} was a Cloud Controller in ${transfer.fromDepartment} and transferred to ${transfer.toDepartment} as ${repo.person(pid)!.title}. The old ${transfer.fromDepartment} groups were never removed, so ${first} still holds ${sensitive.entitlement.name} and Jira access from Finance. None of the ${transfer.toDepartment} team holds ${sensitive.entitlement.name}, and the original ticket was only for the old Finance role. Removing those groups closes the gap without touching ${first}'s Marketing VPN DEMO access.`,
+        headline: `${first} pasó a ${transfer.toDepartment} el ${transfer.date} y aún tiene acceso a ${sensitive.entitlement.name} de ${transfer.fromDepartment}.`,
+        explanation: `${name} era Controller cloud en ${transfer.fromDepartment} y se trasladó a ${transfer.toDepartment} como ${repo.person(pid)!.title}. Nunca se le quitaron los grupos de ${transfer.fromDepartment}, así que ${first} sigue teniendo acceso a ${sensitive.entitlement.name} y a Jira de Finanzas. Nadie del equipo de ${transfer.toDepartment} tiene ${sensitive.entitlement.name}, y el ticket original solo cubría el antiguo puesto en Finanzas. Quitar esos grupos cierra el hueco sin tocar el acceso de ${first} a la VPN DEMO de Marketing.`,
         evidence: [
-          `HR: transferred ${transfer.fromDepartment} → ${transfer.toDepartment} on ${transfer.date}.`,
-          `Still a member of ${leftover.map((g) => repo.group(g)!.name).join(" and ")}.`,
-          `0 of ${repo.activePeers(repo.person(pid)!).length} ${transfer.toDepartment} peers have ${sensitive.entitlement.name}.`,
-          `Ticket TCK-2021-0007 granted ${sensitive.entitlement.name} for the Cloud Controller role, which ${first} no longer holds.`,
+          `RR. HH.: traslado ${transfer.fromDepartment} → ${transfer.toDepartment} el ${transfer.date}.`,
+          `Sigue en ${leftover.map((g) => repo.group(g)!.name).join(" y ")}.`,
+          `0 de ${repo.activePeers(repo.person(pid)!).length} compañeros de ${transfer.toDepartment} tienen ${sensitive.entitlement.name}.`,
+          `El ticket TCK-2021-0007 concedió ${sensitive.entitlement.name} para el puesto de Controller cloud, que ${first} ya no ocupa.`,
         ],
-        actions: leftover.map((g) => ({ kind: "remove_from_group" as const, target: g, reason: `Belongs to ${first}'s previous ${transfer.fromDepartment} role.` })),
+        actions: leftover.map((g) => ({ kind: "remove_from_group" as const, target: g, reason: `Pertenece al puesto anterior de ${first} en ${transfer.fromDepartment}.` })),
         confidence: "high",
       };
     }
@@ -74,27 +74,27 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       const p = repo.person(pid)!;
       const after = repo.badgeEvents(pid, p.endDate);
       await run([
-        { say: `Confirming ${first}'s employment status.`, call: ["get_person", { person_id: pid }] },
-        { say: "Listing every service and device still active.", call: ["list_access", { principal_id: pid }] },
-        { say: `Has ${first}'s Móvil Trabajo or Descodificador DEMO been used since ${p.endDate}?`, call: ["get_badge_events", { person_id: pid, since: p.endDate }] },
-        { say: "And any remote VPN or Azure logins?", call: ["get_login_events", { principal_id: pid, since: p.endDate }] },
+        { say: `Confirmo la situación laboral de ${first}.`, call: ["get_person", { person_id: pid }] },
+        { say: "Listo todos los servicios y dispositivos que siguen activos.", call: ["list_access", { principal_id: pid }] },
+        { say: `¿Se ha usado el Móvil Trabajo o el Descodificador DEMO de ${first} desde el ${p.endDate}?`, call: ["get_badge_events", { person_id: pid, since: p.endDate }] },
+        { say: "¿Y algún inicio de sesión remoto por VPN o en Azure?", call: ["get_login_events", { principal_id: pid, since: p.endDate }] },
       ]);
       const deco = after.find((e) => e.doorEntitlementId === "ent-descodificador-demo");
       return {
         decision: "escalate",
         headline: deco
-          ? `${first} left on ${p.endDate}, yet Descodificador DEMO was accessed on ${deco.time.slice(0, 10)} at ${deco.time.slice(11, 16)}.`
-          : `${first} left on ${p.endDate} and still holds Azure, VPN Full and Descodificador DEMO.`,
-        explanation: `${name} resigned on ${p.endDate} but was never offboarded: the account still holds Azure, VPN Full, VPN Laboratorio, Móvil Trabajo and Descodificador DEMO. ${deco ? `Those devices were used ${after.length} times after departure, including Descodificador DEMO late at night. ` : ""}This goes beyond routine cleanup and should be handled as a possible security incident. Disable the account and devices immediately and open an incident.`,
+          ? `${first} causó baja el ${p.endDate}, pero el Descodificador DEMO se usó el ${deco.time.slice(0, 10)} a las ${deco.time.slice(11, 16)}.`
+          : `${first} causó baja el ${p.endDate} y aún tiene Azure, VPN Full y Descodificador DEMO.`,
+        explanation: `${name} causó baja el ${p.endDate}, pero nunca se cerraron sus accesos: la cuenta sigue teniendo Azure, VPN Full, VPN Laboratorio, Móvil Trabajo y Descodificador DEMO. ${deco ? `Esos dispositivos se usaron ${after.length} veces después de su salida, incluido el Descodificador DEMO a altas horas de la noche. ` : ""}Esto va más allá de una limpieza rutinaria y debe tratarse como un posible incidente de seguridad. Desactiva ya la cuenta y los dispositivos y abre un incidente.`,
         evidence: [
-          `HR: left on ${p.endDate}.`,
-          `Still in IT Core Admins (Azure, VPN Full, VPN Laboratorio) and Descodificador DEMO.`,
-          ...after.map((e) => `Device check-in granted: ${repo.entitlement(e.doorEntitlementId)!.name} at ${e.time}.`),
+          `RR. HH.: baja el ${p.endDate}.`,
+          "Sigue en Administradores de TI (Azure, VPN Full, VPN Laboratorio) y Descodificador DEMO.",
+          ...after.map((e) => `Registro de dispositivo permitido: ${repo.entitlement(e.doorEntitlementId)!.name} el ${e.time}.`),
         ],
         actions: [
-          { kind: "disable_badge", target: pid, reason: "Devices (Descodificador DEMO / Móvil Trabajo) belong to a former employee." },
-          { kind: "disable_account", target: pid, reason: "Account should have been disabled at offboarding." },
-          { kind: "open_incident", target: pid, reason: "Descodificador DEMO device accessed after departure date." },
+          { kind: "disable_badge", target: pid, reason: "Los dispositivos (Descodificador DEMO / Móvil Trabajo) pertenecen a un ex empleado." },
+          { kind: "disable_account", target: pid, reason: "La cuenta debió desactivarse al tramitar la baja." },
+          { kind: "open_incident", target: pid, reason: "Se usó el Descodificador DEMO después de la fecha de baja." },
         ],
         confidence: "high",
       };
@@ -104,63 +104,63 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       const sa = repo.serviceAccount(pid)!;
       const owner = repo.person(sa.ownerId)!;
       await run([
-        { say: "Looking up the service account and its owner.", call: ["get_service_account", { account_id: pid }] },
-        { say: "Checking which services it can access.", call: ["list_access", { principal_id: pid }] },
-        { say: "Checking recent Azure and VPN Full logins.", call: ["get_login_events", { principal_id: pid }] },
+        { say: "Consulto la cuenta de servicio y su propietario.", call: ["get_service_account", { account_id: pid }] },
+        { say: "Compruebo a qué servicios tiene acceso.", call: ["list_access", { principal_id: pid }] },
+        { say: "Reviso los inicios de sesión recientes en Azure y VPN Full.", call: ["get_login_events", { principal_id: pid }] },
       ]);
       const logins = repo.loginEvents(pid);
       return {
         decision: "revoke",
-        headline: `${sa.name} holds Azure, VPN Full and VPN Laboratorio with no owner since ${owner.name} left on ${owner.endDate}.`,
-        explanation: `This account runs "${sa.description.toLowerCase()}". Its owner left on ${owner.endDate}, leaving nobody responsible for it, yet it still holds Azure, VPN Full and VPN Laboratorio and keeps authenticating at night from ${logins.at(-1)?.ip}. An unowned privileged account is a prime target for attackers. Remove IT Core Admins now and have IT confirm whether the job is still needed.`,
+        headline: `${sa.name} tiene Azure, VPN Full y VPN Laboratorio sin propietario desde que ${owner.name} causó baja el ${owner.endDate}.`,
+        explanation: `Esta cuenta ejecuta «${sa.description}». Su propietario causó baja el ${owner.endDate} y nadie se hace responsable de ella, pero sigue teniendo Azure, VPN Full y VPN Laboratorio y sigue autenticándose de noche desde ${logins.at(-1)?.ip}. Una cuenta privilegiada sin propietario es un objetivo ideal para un atacante. Quítala ya de Administradores de TI y pide a TI que confirme si el proceso sigue haciendo falta.`,
         evidence: [
-          `Owner ${owner.name} left on ${owner.endDate}.`,
-          `Member of IT Core Admins (Azure, VPN Full, VPN Laboratorio) since ${sa.createdDate}.`,
-          ...logins.map((l) => `Login: ${l.system} at ${l.time} from ${l.ip}.`),
+          `Su propietario, ${owner.name}, causó baja el ${owner.endDate}.`,
+          `Miembro de Administradores de TI (Azure, VPN Full, VPN Laboratorio) desde el ${sa.createdDate}.`,
+          ...logins.map((l) => `Inicio de sesión: ${l.system} el ${l.time} desde ${l.ip}.`),
         ],
-        actions: [{ kind: "remove_from_group", target: "g-it-admins", reason: "No active owner; Azure & VPN Full rights unjustified." }],
+        actions: [{ kind: "remove_from_group", target: "g-it-admins", reason: "Sin propietario activo; los permisos de Azure y VPN Full no están justificados." }],
         confidence: "high",
       };
     }
 
     case "toxic_combination": {
       await run([
-        { say: `Checking how ${first} got both Firebase and Azure access.`, call: ["list_access", { principal_id: pid }] },
-        { say: "Is there a valid ticket for the Azure access?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: "ent-azure" }] },
-        { say: "Who else in Finance has Azure access?", call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-azure" }] },
+        { say: `Compruebo cómo consiguió ${first} acceso a Firebase y a Azure a la vez.`, call: ["list_access", { principal_id: pid }] },
+        { say: "¿Hay un ticket válido para el acceso a Azure?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: "ent-azure" }] },
+        { say: "¿Quién más en Finanzas tiene acceso a Azure?", call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-azure" }] },
       ]);
       const ticket = repo.ticketsFor(pid, "ent-azure")[0];
       return {
         decision: "revoke",
-        headline: `${first} holds both Firebase and Azure admin access — the temporary cover expired on ${ticket?.expiresDate}.`,
-        explanation: `${name} is a Billing Analyst who uses Firebase as part of the role. Azure access was added on ${ticket?.approvedDate} to cover a colleague's leave and was meant to end on ${ticket?.expiresDate}, but it was never revoked. Holding both Firebase and Azure violates separation of duties. Remove Finance Azure while keeping ${first}'s regular Firebase access.`,
+        headline: `${first} tiene acceso de administración a Firebase y a Azure: la cobertura temporal caducó el ${ticket?.expiresDate}.`,
+        explanation: `${name} es analista de facturación y usa Firebase en su trabajo. El acceso a Azure se añadió el ${ticket?.approvedDate} para cubrir la baja de una compañera y debía terminar el ${ticket?.expiresDate}, pero nunca se revocó. Tener Firebase y Azure a la vez incumple la segregación de funciones. Quita Azure de Finanzas y mantén el acceso habitual de ${first} a Firebase.`,
         evidence: [
-          "Firebase via Finance Firebase (normal for the role).",
-          `Azure via Finance Azure since ${ticket?.approvedDate}.`,
-          `Ticket ${ticket?.id}: "${ticket?.justification}" — expired ${ticket?.expiresDate}.`,
+          "Firebase a través de Firebase de Finanzas (normal para su puesto).",
+          `Azure a través de Azure de Finanzas desde el ${ticket?.approvedDate}.`,
+          `Ticket ${ticket?.id}: «${ticket?.justification}». Caducó el ${ticket?.expiresDate}.`,
         ],
-        actions: [{ kind: "remove_from_group", target: "g-fin-cloud", reason: "Temporary Azure cover expired; breaks separation of duties with Firebase." }],
+        actions: [{ kind: "remove_from_group", target: "g-fin-cloud", reason: "La cobertura temporal de Azure ha caducado; incumple la segregación de funciones con Firebase." }],
         confidence: "high",
       };
     }
 
     case "impossible_travel": {
-      const login = repo.loginEvents(pid).find((l) => l.country !== "Spain")!;
+      const login = repo.loginEvents(pid).find((l) => l.country !== "España")!;
       await run([
-        { say: `Checking ${first}'s Móvil Trabajo check-ins for that morning.`, call: ["get_badge_events", { person_id: pid, since: login.time.slice(0, 10) }] },
-        { say: "Checking VPN General logins around the same time.", call: ["get_login_events", { principal_id: pid, since: login.time.slice(0, 10) }] },
-        { say: `Any travel on record for ${first}?`, call: ["get_person", { person_id: pid }] },
+        { say: `Reviso los registros del Móvil Trabajo de ${first} de esa mañana.`, call: ["get_badge_events", { person_id: pid, since: login.time.slice(0, 10) }] },
+        { say: "Reviso los inicios de sesión en VPN General a la misma hora.", call: ["get_login_events", { principal_id: pid, since: login.time.slice(0, 10) }] },
+        { say: `¿Consta algún viaje de ${first}?`, call: ["get_person", { person_id: pid }] },
       ]);
       const gap = (t: string) => Math.abs(Date.parse(t) - Date.parse(login.time));
       const badge = repo.badgeEvents(pid, login.time.slice(0, 10)).sort((a, b) => gap(a.time) - gap(b.time))[0]!;
       return {
         decision: "escalate",
-        headline: `${first}'s Móvil Trabajo checked in at Madrid HQ at ${badge.time.slice(11, 16)}, while ${login.system} logged in from ${login.city} at ${login.time.slice(11, 16)}.`,
-        explanation: `${first}'s corporate Móvil Trabajo registered in Madrid HQ, and 19 minutes later a ${login.system} session opened from ${login.city}, ${login.country}. One person cannot be in both places, pointing to compromised VPN credentials rather than an access-rights misconfiguration. Reset credentials immediately and open a security incident.`,
-        evidence: [`Móvil Trabajo: ${badge.time} at ${badge.site}.`, `${login.system}: ${login.time} from ${login.city}, ${login.country} (IP ${login.ip}).`, "No travel on record; home office Madrid HQ."],
+        headline: `El Móvil Trabajo de ${first} se registró en la sede de Madrid a las ${badge.time.slice(11, 16)}, mientras ${login.system} abría sesión desde ${login.city} a las ${login.time.slice(11, 16)}.`,
+        explanation: `El Móvil Trabajo corporativo de ${first} se registró en la sede de Madrid y 19 minutos después se abrió una sesión de ${login.system} desde ${login.city}, ${login.country}. Una persona no puede estar en los dos sitios, así que apunta a credenciales de VPN comprometidas más que a un error de permisos. Restablece ya las credenciales y abre un incidente de seguridad.`,
+        evidence: [`Móvil Trabajo: ${badge.time} en ${badge.site}.`, `${login.system}: ${login.time} desde ${login.city}, ${login.country} (IP ${login.ip}).`, "No consta ningún viaje; su oficina es la sede de Madrid."],
         actions: [
-          { kind: "reset_credentials", target: pid, reason: "VPN General credentials likely compromised." },
-          { kind: "open_incident", target: pid, reason: "Impossible travel between Madrid Móvil Trabajo check-in and Lagos VPN General login." },
+          { kind: "reset_credentials", target: pid, reason: "Credenciales de VPN General probablemente comprometidas." },
+          { kind: "open_incident", target: pid, reason: "Viaje imposible entre el registro del Móvil Trabajo en Madrid y el inicio de sesión en VPN General desde Lagos." },
         ],
         confidence: "medium",
       };
@@ -169,10 +169,10 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
     case "peer_outlier": {
       const ent = f.entitlementIds[0]!;
       await run([
-        { say: `${first} has access none of the Engineering peers hold. Checking why.`, call: ["list_access", { principal_id: pid }] },
+        { say: `${first} tiene un acceso que no tiene ningún compañero de Ingeniería. Compruebo por qué.`, call: ["list_access", { principal_id: pid }] },
         { call: ["compare_with_peers", { person_id: pid, entitlement_id: ent }] },
-        { say: "Is there an approved ticket?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: ent }] },
-        { say: "Has Descodificador DEMO actually been used recently?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
+        { say: "¿Hay un ticket aprobado?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: ent }] },
+        { say: "¿Se ha usado de verdad el Descodificador DEMO últimamente?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
       ]);
       const t = repo.ticketsFor(pid, ent)[0];
       const valid = t && (!t.expiresDate || t.expiresDate >= repo.c.asOf);
@@ -180,19 +180,19 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       if (valid) {
         return {
           decision: "keep",
-          headline: `${first}'s ${e.name} access is unusual for ${repo.person(pid)!.department} but approved until ${t.expiresDate}.`,
-          explanation: `None of ${first}'s Engineering peers hold ${e.name}, which is why it was flagged. However, ticket ${t.id} shows it was requested by ${repo.principalName(t.requestedBy)} and approved by ${t.approvedBy} because "${t.justification.toLowerCase()}" The approval is valid until ${t.expiresDate}, and the recent on-call usage matches the rotation. Keep it and review when the ticket expires.`,
-          evidence: [`Ticket ${t.id}: approved by ${t.approvedBy} on ${t.approvedDate}, expires ${t.expiresDate}.`, `Justification: ${t.justification}`],
+          headline: `El acceso de ${first} a ${e.name} es poco habitual en ${repo.person(pid)!.department}, pero está aprobado hasta el ${t.expiresDate}.`,
+          explanation: `Ningún compañero de Ingeniería de ${first} tiene ${e.name}, y por eso se ha señalado. Sin embargo, el ticket ${t.id} muestra que lo pidió ${repo.principalName(t.requestedBy)} y lo aprobó ${t.approvedBy} por este motivo: «${t.justification}» La aprobación es válida hasta el ${t.expiresDate} y el uso reciente durante las guardias encaja con el turno. Mantenlo y revísalo cuando caduque el ticket.`,
+          evidence: [`Ticket ${t.id}: aprobado por ${t.approvedBy} el ${t.approvedDate}, caduca el ${t.expiresDate}.`, `Justificación: ${t.justification}`],
           actions: [],
           confidence: "high",
         };
       }
       return {
         decision: "revoke",
-        headline: `${first} has ${e.name} access nobody else in the team has, with no valid approval.`,
-        explanation: `No peer holds this and there is no current ticket for it.`,
+        headline: `${first} tiene acceso a ${e.name}, que no tiene nadie más del equipo, sin una aprobación válida.`,
+        explanation: "Ningún compañero lo tiene y no hay ningún ticket vigente que lo cubra.",
         evidence: f.facts,
-        actions: groupsFor((a) => a.entitlement.id === ent).map((g) => ({ kind: "remove_from_group" as const, target: g, reason: "Unjustified outlier access." })),
+        actions: groupsFor((a) => a.entitlement.id === ent).map((g) => ({ kind: "remove_from_group" as const, target: g, reason: "Acceso anómalo sin justificar." })),
         confidence: "medium",
       };
     }

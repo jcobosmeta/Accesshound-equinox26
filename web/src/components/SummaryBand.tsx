@@ -35,8 +35,8 @@ export function SummaryBand({ summary, findings, graph }: { summary?: Summary; f
               <Stack space={4}>
                 <Title3 as="h1">{summary.company}</Title3>
                 <Text2 regular color={skinVars.colors.textSecondary}>
-                  Access snapshot of {formatDate(summary.asOf)} · {summary.activePeople} active people, {summary.serviceAccounts}{" "}
-                  service accounts, {summary.groups} groups, {summary.entitlements} entitlements
+                  Instantánea de accesos del {formatDate(summary.asOf)} · {summary.activePeople} personas activas,{" "}
+                  {summary.serviceAccounts} cuentas de servicio, {summary.groups} grupos, {summary.entitlements} permisos
                 </Text2>
               </Stack>
             ) : (
@@ -46,11 +46,11 @@ export function SummaryBand({ summary, findings, graph }: { summary?: Summary; f
               </Stack>
             )}
             <Inline space={32} wrap verticalSpace={12}>
-              <Stat value={graph ? `${graph.avgRisk}%` : "–"} label="Avg org risk" />
-              <Stat value={graph ? `${graph.maxRisk}%` : "–"} label="Peak user risk" color={maxRiskColor} />
-              <Stat value={toReview} label="To investigate" />
-              <Stat value={needsDecision} label="Need decision" color={needsDecision ? skinVars.colors.warning : undefined} />
-              <Stat value={decided} label="Decided" color={decided ? skinVars.colors.success : undefined} />
+              <Stat value={graph ? `${graph.avgRisk}%` : "–"} label="Riesgo medio" />
+              <Stat value={graph ? `${graph.maxRisk}%` : "–"} label="Riesgo máximo" color={maxRiskColor} />
+              <Stat value={toReview} label="Por investigar" />
+              <Stat value={needsDecision} label="Pendientes de decisión" color={needsDecision ? skinVars.colors.warning : undefined} />
+              <Stat value={decided} label="Decididos" color={decided ? skinVars.colors.success : undefined} />
             </Inline>
           </Inline>
         </Box>

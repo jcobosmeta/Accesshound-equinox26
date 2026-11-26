@@ -25,22 +25,28 @@ const REVIEWER_KEY = "accesshound.reviewer";
 function describeAction(action: Proposal["actions"][number], principalName: string, groupNames: Map<string, string>) {
   switch (action.kind) {
     case "remove_from_group":
-      return `Remove ${principalName} from ${groupNames.get(action.target) ?? action.target}`;
+      return `Quitar a ${principalName} de ${groupNames.get(action.target) ?? action.target}`;
     case "disable_account":
-      return `Disable ${principalName}'s account and remove every group membership`;
+      return `Desactivar la cuenta de ${principalName} y quitarla de todos sus grupos`;
     case "disable_badge":
-      return `Disable ${principalName}'s devices`;
+      return `Desactivar los dispositivos de ${principalName}`;
     case "reset_credentials":
-      return `Reset ${principalName}'s credentials`;
+      return `Restablecer las credenciales de ${principalName}`;
     case "open_incident":
-      return `Open a security incident`;
+      return "Abrir un incidente de seguridad";
   }
 }
 
+const confidenceLabel: Record<Proposal["confidence"], string> = {
+  low: "Confianza baja",
+  medium: "Confianza media",
+  high: "Confianza alta",
+};
+
 const approveLabel: Record<Proposal["decision"], string> = {
-  revoke: "Approve and revoke",
-  escalate: "Approve and escalate",
-  keep: "Approve: keep access",
+  revoke: "Aprobar y revocar",
+  escalate: "Aprobar y escalar",
+  keep: "Aprobar: mantener el acceso",
 };
 
 interface Props {
@@ -58,7 +64,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
   const [busy, setBusy] = React.useState<"approved" | "rejected">();
 
   const submit = async (decision: "approved" | "rejected") => {
-    const name = reviewer.trim() || "Reviewer";
+    const name = reviewer.trim() || "Revisor";
     localStorage.setItem(REVIEWER_KEY, name);
     setBusy(decision);
     try {
@@ -75,10 +81,10 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
           <Stack space={12}>
             <Inline space={8} alignItems="center" wrap verticalSpace={8}>
               <Text1 medium color={skinVars.colors.textSecondary}>
-                Agent recommends
+                El agente recomienda
               </Text1>
               <DecisionTag decision={proposal.decision} />
-              <Tag type="inactive">{`${proposal.confidence[0]!.toUpperCase()}${proposal.confidence.slice(1)} confidence`}</Tag>
+              <Tag type="inactive">{confidenceLabel[proposal.confidence]}</Tag>
               {finding.agentMode && <ModeTag mode={finding.agentMode} />}
             </Inline>
             <Title2 as="h3">{proposal.headline}</Title2>
@@ -86,7 +92,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
           </Stack>
 
           <Stack space={8}>
-            <Text2 medium>Evidence the agent checked</Text2>
+            <Text2 medium>Pruebas que ha revisado el agente</Text2>
             <UnorderedList>
               {proposal.evidence.map((e, i) => (
                 <ListItem key={i}>
@@ -97,7 +103,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
           </Stack>
 
           <Stack space={8}>
-            <Text2 medium>{auditEntry?.humanDecision === "approved" ? "What changed" : "If you approve"}</Text2>
+            <Text2 medium>{auditEntry?.humanDecision === "approved" ? "Qué ha cambiado" : "Si apruebas"}</Text2>
             {auditEntry?.humanDecision === "approved" ? (
               auditEntry.applied.length ? (
                 <UnorderedList>
@@ -108,7 +114,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
                   ))}
                 </UnorderedList>
               ) : (
-                <Text2 regular>Nothing. The access stays as it is.</Text2>
+                <Text2 regular>Nada. El acceso se queda como está.</Text2>
               )
             ) : proposal.actions.length ? (
               <UnorderedList>
@@ -119,7 +125,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
                 ))}
               </UnorderedList>
             ) : (
-              <Text2 regular>Nothing changes. The access stays, and the decision is logged.</Text2>
+              <Text2 regular>No cambia nada. El acceso se mantiene y la decisión queda registrada.</Text2>
             )}
           </Stack>
 
@@ -129,10 +135,10 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
             <Stack space={8}>
               <Inline space={8} alignItems="center">
                 <Tag type={auditEntry.humanDecision === "approved" ? "success" : "info"}>
-                  {auditEntry.humanDecision === "approved" ? "Approved" : "Rejected"}
+                  {auditEntry.humanDecision === "approved" ? "Aprobado" : "Rechazado"}
                 </Tag>
                 <Text2 regular>
-                  by {auditEntry.reviewer} on {formatTime(auditEntry.time)} · audit entry {auditEntry.id}
+                  por {auditEntry.reviewer} el {formatTime(auditEntry.time)} · entrada de auditoría {auditEntry.id}
                 </Text2>
               </Inline>
               {auditEntry.note && (
@@ -143,10 +149,10 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
             </Stack>
           ) : (
             <Stack space={16}>
-              <Text2 medium>Your decision</Text2>
+              <Text2 medium>Tu decisión</Text2>
               <TextField
                 name="reviewer"
-                label="Reviewer"
+                label="Revisor"
                 value={reviewer}
                 onChangeValue={setReviewer}
                 autoComplete="name"
@@ -154,7 +160,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
               />
               <TextField
                 name="note"
-                label="Note for the audit trail"
+                label="Nota para el registro de auditoría"
                 optional
                 maxLength={280}
                 value={note}
@@ -170,7 +176,7 @@ export function ProposalCard({ finding, proposal, groupNames, auditEntry, onDeci
                 }
                 secondaryButton={
                   <ButtonSecondary onPress={() => submit("rejected")} showSpinner={busy === "rejected"} disabled={!!busy}>
-                    Reject
+                    Rechazar
                   </ButtonSecondary>
                 }
               />

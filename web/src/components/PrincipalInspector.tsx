@@ -29,7 +29,16 @@ import IconCheckRegular from "@telefonica/mistica-icons/icon-check-regular";
 import IconRobotRegular from "@telefonica/mistica-icons/icon-robot-regular";
 import * as React from "react";
 import type { AgentEvent, AuditEntry, Finding, PrincipalDetail, RiskLevel } from "../api";
-import { findingTypes, formatDate, formatTime, initials, scorePalette, SeverityTag, StatusTag } from "../present";
+import {
+  findingTypes,
+  formatDate,
+  formatTime,
+  hrEventLabel,
+  initials,
+  scorePalette,
+  SeverityTag,
+  StatusTag,
+} from "../present";
 import { usePrincipal } from "../usePrincipal";
 import { AccessGraph } from "./AccessGraph";
 import { AgentTrace } from "./AgentTrace";
@@ -43,7 +52,7 @@ function LargeRiskRing({ score, level }: { score: number; level: RiskLevel }) {
   const filled = (Math.max(0, Math.min(100, score)) / 100) * circ;
   return (
     <Inline space={12} alignItems="center">
-      <svg width={70} height={70} viewBox="0 0 70 70" aria-label={`Risk score ${score}%`}>
+      <svg width={70} height={70} viewBox="0 0 70 70" aria-label={`Puntuación de riesgo ${score}%`}>
         <circle cx={35} cy={35} r={r} fill={pal.bg} stroke="#1E293B" strokeWidth={5.5} />
         <circle
           cx={35}
@@ -73,7 +82,7 @@ function LargeRiskRing({ score, level }: { score: number; level: RiskLevel }) {
           {pal.label}
         </Text2>
         <Text1 regular color={skinVars.colors.textSecondary}>
-          Live risk score
+          Riesgo en tiempo real
         </Text1>
       </Stack>
     </Inline>
@@ -82,10 +91,10 @@ function LargeRiskRing({ score, level }: { score: number; level: RiskLevel }) {
 
 function principalSubtitle(detail: PrincipalDetail) {
   if (detail.kind === "service") {
-    return `Service account · ${detail.profile.description} · created ${formatDate(detail.profile.createdDate)}`;
+    return `Cuenta de servicio · ${detail.profile.description} · creada el ${formatDate(detail.profile.createdDate)}`;
   }
   const p = detail.profile;
-  return `${p.title} · ${p.department} · ${p.homeOffice} · since ${formatDate(p.startDate)}`;
+  return `${p.title} · ${p.department} · ${p.homeOffice} · desde ${formatDate(p.startDate)}`;
 }
 
 function InvestigatePrompt({ onInvestigate }: { onInvestigate: () => void }) {
@@ -94,17 +103,17 @@ function InvestigatePrompt({ onInvestigate }: { onInvestigate: () => void }) {
     <Inline space={16} alignItems="center" expand={1}>
       <IconAiRegular size={32} color={skinVars.colors.brand} />
       <Stack space={4}>
-        <Text2 medium>Let the agent investigate this finding</Text2>
+        <Text2 medium>Deja que el agente investigue este hallazgo</Text2>
         <Text1 regular color={skinVars.colors.textSecondary}>
-          It verifies HR records, group memberships, tickets, peers and access logs, then recommends revoke, keep or escalate.
-          Every lookup is read-only until you approve.
+          Comprueba los registros de RR. HH., la pertenencia a grupos, los tickets, los compañeros y los registros de acceso, y
+          recomienda revocar, mantener o escalar. Solo consulta datos: nada cambia hasta que lo apruebes.
         </Text1>
       </Stack>
     </Inline>
   );
   const button = (
     <ButtonPrimary small onPress={onInvestigate}>
-      Investigate
+      Investigar
     </ButtonPrimary>
   );
   return (
@@ -160,7 +169,7 @@ function FindingInvestigationSection({
               </Inline>
               {canInvestigate && (trace || finding.proposal) && (
                 <ButtonLink small onPress={onInvestigate}>
-                  Run again
+                  Volver a ejecutar
                 </ButtonLink>
               )}
             </Inline>
@@ -168,7 +177,7 @@ function FindingInvestigationSection({
           </Stack>
 
           <Stack space={8}>
-            <Text2 medium>What the rules found</Text2>
+            <Text2 medium>Qué han encontrado las reglas</Text2>
             <UnorderedList>
               {finding.facts.map((fact, i) => (
                 <ListItem key={i}>
@@ -181,15 +190,15 @@ function FindingInvestigationSection({
           <Divider />
 
           <Stack space={16}>
-            <Text2 medium>Agent investigation</Text2>
+            <Text2 medium>Investigación del agente</Text2>
             {trace ? (
-              <ErrorBoundary title="Couldn't show the agent's steps">
+              <ErrorBoundary title="No se pueden mostrar los pasos del agente">
                 <AgentTrace events={trace} />
               </ErrorBoundary>
             ) : running ? (
               <Inline space={8} alignItems="center">
                 <Spinner size={16} />
-                <Text2 regular>The agent is investigating…</Text2>
+                <Text2 regular>El agente está investigando…</Text2>
               </Inline>
             ) : !finding.proposal ? (
               <InvestigatePrompt onInvestigate={onInvestigate} />
@@ -233,11 +242,11 @@ function CleanInvestigationSummary({ detail }: { detail: PrincipalDetail }) {
               <IconCheckRegular size={20} color="#34D399" />
             </div>
             <Stack space={2}>
-              <Text2 medium>No active policy violations detected</Text2>
+              <Text2 medium>No se han detectado incumplimientos activos</Text2>
               <Text1 regular color={skinVars.colors.textSecondary}>
-                All six automated detectors (leaver access, orphaned accounts, role-change leftovers, separation of duties,
-                impossible travel, peer outliers) cleared {detail.profile.name}. Their {detail.risk.score}% risk score reflects
-                baseline privilege exposure only.
+                Los seis detectores automáticos (accesos de bajas, cuentas huérfanas, restos de cambios de puesto, segregación de
+                funciones, viajes imposibles y anomalías frente a compañeros) no han encontrado nada en {detail.profile.name}. Su
+                riesgo del {detail.risk.score}% solo refleja la exposición base de sus privilegios.
               </Text1>
             </Stack>
           </Inline>
@@ -247,13 +256,13 @@ function CleanInvestigationSummary({ detail }: { detail: PrincipalDetail }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
             {/* HR & tickets */}
             <Stack space={8}>
-              <Text2 medium>{detail.kind === "person" ? "HR & ticket history" : "Account governance"}</Text2>
+              <Text2 medium>{detail.kind === "person" ? "Historial de RR. HH. y tickets" : "Gobierno de la cuenta"}</Text2>
               {detail.hrHistory.length > 0 ? (
                 <UnorderedList>
                   {detail.hrHistory.map((e, i) => (
                     <ListItem key={i}>
                       <Text1 regular>
-                        {`${formatDate(e.date)} · ${e.type.toUpperCase()}`}
+                        {`${formatDate(e.date)} · ${hrEventLabel[e.type].toUpperCase()}`}
                         {e.fromDepartment && e.toDepartment
                           ? ` (${e.fromDepartment} → ${e.toDepartment})`
                           : e.toDepartment
@@ -266,19 +275,19 @@ function CleanInvestigationSummary({ detail }: { detail: PrincipalDetail }) {
                 </UnorderedList>
               ) : (
                 <Text1 regular color={skinVars.colors.textSecondary}>
-                  Created {detail.kind === "service" ? formatDate(detail.profile.createdDate) : "on record"}
+                  Creada {detail.kind === "service" ? `el ${formatDate(detail.profile.createdDate)}` : "según el registro"}
                 </Text1>
               )}
               {detail.tickets.length > 0 && (
                 <Stack space={4}>
                   <Text1 medium color={skinVars.colors.textSecondary}>
-                    Access tickets
+                    Tickets de acceso
                   </Text1>
                   <UnorderedList>
                     {detail.tickets.map((t) => (
                       <ListItem key={t.id}>
                         <Text1 regular>
-                          {`${t.id}: ${t.entitlementName} (approved by ${t.approvedByName}${t.expiresDate ? `, expires ${formatDate(t.expiresDate)}` : ""})`}
+                          {`${t.id}: ${t.entitlementName} (aprobado por ${t.approvedByName}${t.expiresDate ? `, caduca el ${formatDate(t.expiresDate)}` : ""})`}
                         </Text1>
                       </ListItem>
                     ))}
@@ -289,21 +298,21 @@ function CleanInvestigationSummary({ detail }: { detail: PrincipalDetail }) {
 
             {/* Recent activity */}
             <Stack space={8}>
-              <Text2 medium>Recent device &amp; login activity</Text2>
+              <Text2 medium>Actividad reciente de dispositivos e inicios de sesión</Text2>
               {detail.recentBadges.length === 0 && detail.recentLogins.length === 0 ? (
                 <Text1 regular color={skinVars.colors.textSecondary}>
-                  No recent device events or logins in the current snapshot window.
+                  No hay eventos de dispositivos ni inicios de sesión recientes en el periodo de la instantánea.
                 </Text1>
               ) : (
                 <UnorderedList>
                   {detail.recentLogins.slice(0, 3).map((l, i) => (
                     <ListItem key={`l-${i}`}>
-                      <Text1 regular>{`${formatTime(l.time)} · ${l.system} login from ${l.city}, ${l.country} (${l.ip})`}</Text1>
+                      <Text1 regular>{`${formatTime(l.time)} · Inicio de sesión en ${l.system} desde ${l.city}, ${l.country} (${l.ip})`}</Text1>
                     </ListItem>
                   ))}
                   {detail.recentBadges.slice(0, 3).map((b, i) => (
                     <ListItem key={`b-${i}`}>
-                      <Text1 regular>{`${formatTime(b.time)} · Device ${b.result}: ${b.doorName} (${b.city})`}</Text1>
+                      <Text1 regular>{`${formatTime(b.time)} · Dispositivo ${b.result === "granted" ? "permitido" : "denegado"}: ${b.doorName} (${b.city})`}</Text1>
                     </ListItem>
                   ))}
                 </UnorderedList>
@@ -369,7 +378,7 @@ export function PrincipalInspector({
       <Boxed>
         <Box padding={24}>
           <Text2 regular color={skinVars.colors.error}>
-            Couldn&apos;t load user profile: {error}
+            No se puede cargar el perfil del usuario: {error}
           </Text2>
         </Box>
       </Boxed>
@@ -403,8 +412,8 @@ export function PrincipalInspector({
                 <Stack space={4}>
                   <Inline space={8} alignItems="center" wrap>
                     <Title3 as="h2">{detail.profile.name}</Title3>
-                    {isLeft && detail.profile.endDate && <Tag type="error">{`Left ${formatDate(detail.profile.endDate)}`}</Tag>}
-                    {detail.kind === "service" && <Tag type="promo">Service account</Tag>}
+                    {isLeft && detail.profile.endDate && <Tag type="error">{`Baja el ${formatDate(detail.profile.endDate)}`}</Tag>}
+                    {detail.kind === "service" && <Tag type="promo">Cuenta de servicio</Tag>}
                   </Inline>
                   <Text2 regular color={skinVars.colors.textSecondary}>
                     {principalSubtitle(detail)}
@@ -416,10 +425,10 @@ export function PrincipalInspector({
                 <LargeRiskRing score={detail.risk.score} level={detail.risk.level} />
                 <Inline space={12} alignItems="center">
                   <ButtonLink small onPress={onBackToGraph}>
-                    ↑ Back to graph
+                    ↑ Volver al mapa
                   </ButtonLink>
                   <ButtonLink small onPress={onClose}>
-                    Close
+                    Cerrar
                   </ButtonLink>
                 </Inline>
               </Inline>
@@ -434,7 +443,7 @@ export function PrincipalInspector({
                 {detail.relations.manager && (
                   <Inline space={4} alignItems="center">
                     <Text1 regular color={skinVars.colors.textSecondary}>
-                      Manager:
+                      Responsable:
                     </Text1>
                     <ButtonLink small onPress={() => onSelectPrincipal(detail.relations.manager!.id)}>
                       {detail.relations.manager.name}
@@ -444,17 +453,17 @@ export function PrincipalInspector({
                 {detail.relations.owner && (
                   <Inline space={4} alignItems="center">
                     <Text1 regular color={skinVars.colors.textSecondary}>
-                      Owner:
+                      Propietario:
                     </Text1>
                     <ButtonLink small onPress={() => onSelectPrincipal(detail.relations.owner!.id)}>
-                      {`${detail.relations.owner.name}${detail.relations.owner.status === "left" ? " (left)" : ""}`}
+                      {`${detail.relations.owner.name}${detail.relations.owner.status === "left" ? " (de baja)" : ""}`}
                     </ButtonLink>
                   </Inline>
                 )}
                 {detail.relations.directReports.length > 0 && (
                   <Inline space={8} alignItems="center" wrap>
                     <Text1 regular color={skinVars.colors.textSecondary}>
-                      {`Direct reports (${detail.relations.directReports.length}):`}
+                      {`Equipo directo (${detail.relations.directReports.length}):`}
                     </Text1>
                     {detail.relations.directReports.map((r) => (
                       <ButtonLink key={r.id} small onPress={() => onSelectPrincipal(r.id)}>
@@ -466,7 +475,7 @@ export function PrincipalInspector({
                 {detail.relations.ownedServiceAccounts.length > 0 && (
                   <Inline space={8} alignItems="center" wrap>
                     <Text1 regular color={skinVars.colors.textSecondary}>
-                      Owns:
+                      Propietario de:
                     </Text1>
                     {detail.relations.ownedServiceAccounts.map((s) => (
                       <ButtonLink key={s.id} small onPress={() => onSelectPrincipal(s.id)}>
@@ -484,7 +493,7 @@ export function PrincipalInspector({
                 <Divider />
                 <Stack space={8}>
                   <Text1 medium color={skinVars.colors.textSecondary}>
-                    Risk score breakdown
+                    Desglose del riesgo
                   </Text1>
                   <Inline space={8} wrap verticalSpace={8}>
                     {detail.risk.factors.map((f, i) => (
@@ -506,15 +515,15 @@ export function PrincipalInspector({
 
       {/* 1. ACCESS MAP (first!) */}
       <Stack space={12}>
-        <Title2 as="h3">Access map</Title2>
-        <ErrorBoundary title="Couldn't draw the access map">
+        <Title2 as="h3">Mapa de accesos</Title2>
+        <ErrorBoundary title="No se puede dibujar el mapa de accesos">
           <AccessGraph detail={detail} removed={removed} flagged={flaggedEntitlementIds} />
         </ErrorBoundary>
       </Stack>
 
       {/* 2. INVESTIGATION (directly below the Access Map!) */}
       <Stack space={12}>
-        <Title2 as="h3">Investigation</Title2>
+        <Title2 as="h3">Investigación</Title2>
         {principalFindings.length > 0 ? (
           <Stack space={24}>
             {principalFindings.map((finding) => (

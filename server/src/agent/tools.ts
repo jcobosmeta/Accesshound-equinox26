@@ -23,7 +23,7 @@ export function lookupTools(repo: Repo) {
       inputSchema: z.object({ person_id: z.string() }),
       run: ({ person_id }) => {
         const p = repo.person(person_id);
-        if (!p) return { error: `No person ${person_id}` };
+        if (!p) return { error: `No existe la persona ${person_id}` };
         return { ...p, manager: p.managerId ? repo.principalName(p.managerId) : null };
       },
     }),
@@ -39,7 +39,7 @@ export function lookupTools(repo: Repo) {
       inputSchema: z.object({ account_id: z.string() }),
       run: ({ account_id }) => {
         const s = repo.serviceAccount(account_id);
-        if (!s) return { error: `No service account ${account_id}` };
+        if (!s) return { error: `No existe la cuenta de servicio ${account_id}` };
         const owner = repo.person(s.ownerId);
         return { ...s, owner: owner ? { id: owner.id, name: owner.name, status: owner.status, endDate: owner.endDate ?? null } : null };
       },
@@ -69,7 +69,7 @@ export function lookupTools(repo: Repo) {
       inputSchema: z.object({ person_id: z.string(), entitlement_id: z.string() }),
       run: ({ person_id, entitlement_id }) => {
         const p = repo.person(person_id);
-        if (!p) return { error: `No person ${person_id}` };
+        if (!p) return { error: `No existe la persona ${person_id}` };
         const peers = repo.activePeers(p);
         const holders = peers.filter((x) => repo.holds(x.id, entitlement_id));
         return { department: p.department, peers: peers.length, holders: holders.map((h) => `${h.name} (${h.title})`) };

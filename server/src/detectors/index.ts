@@ -55,11 +55,11 @@ export function detect(repo: Repo): Finding[] {
       type: "leaver_access",
       severity: "high",
       principalId: p.id,
-      title: `${p.name} left on ${p.endDate} but still has ${ids.length} active entitlements`,
+      title: `${p.name} causó baja el ${p.endDate} pero aún tiene ${ids.length} permisos activos`,
       facts: [
-        `Left the company on ${p.endDate}.`,
-        `Still holds: ${[...new Set(highRisk)].join(", ") || "low-risk access only"}.`,
-        ...(afterLeaving.length ? [`${afterLeaving.length} device check-ins granted after leaving, latest ${afterLeaving.at(-1)!.time}.`] : []),
+        `Dejó la empresa el ${p.endDate}.`,
+        `Aún tiene: ${[...new Set(highRisk)].join(", ") || "solo accesos de riesgo bajo"}.`,
+        ...(afterLeaving.length ? [`${afterLeaving.length} registros de dispositivo permitidos después de la baja; el último, ${afterLeaving.at(-1)!.time}.`] : []),
       ],
       entitlementIds: ids,
     });
@@ -77,10 +77,10 @@ export function detect(repo: Repo): Finding[] {
       type: "orphaned_service_account",
       severity: access.some((a) => a.entitlement.risk === "high") ? "high" : "medium",
       principalId: s.id,
-      title: `${s.name} has no active owner but still holds ${access.map((a) => a.entitlement.name).join(", ")}`,
+      title: `${s.name} no tiene propietario activo pero aún tiene ${access.map((a) => a.entitlement.name).join(", ")}`,
       facts: [
-        owner ? `Owner ${owner.name} left on ${owner.endDate}.` : `Owner ${s.ownerId} does not exist.`,
-        ...(last ? [`Last login ${last.time} from ${last.ip}.`] : ["No recorded logins."]),
+        owner ? `Su propietario, ${owner.name}, causó baja el ${owner.endDate}.` : `El propietario ${s.ownerId} no existe.`,
+        ...(last ? [`Último inicio de sesión: ${last.time} desde ${last.ip}.`] : ["No hay inicios de sesión registrados."]),
       ],
       entitlementIds: ids,
     });
@@ -103,11 +103,11 @@ export function detect(repo: Repo): Finding[] {
       type: "role_change_leftover",
       severity: ents.some((x) => x.risk === "high") ? "high" : "medium",
       principalId: p.id,
-      title: `${p.name} moved from ${e.fromDepartment} to ${e.toDepartment} and kept ${e.fromDepartment} access`,
+      title: `${p.name} pasó de ${e.fromDepartment} a ${e.toDepartment} y conservó los accesos de ${e.fromDepartment}`,
       facts: [
-        `Transferred ${e.fromDepartment} → ${e.toDepartment} on ${e.date} (${days} days ago).`,
-        `Still in: ${leftovers.map(({ g }) => g.name).join(", ")}.`,
-        `Leftover entitlements: ${ents.map((x) => (x.system === x.name ? x.name : `${x.system}: ${x.name}`)).join(", ")}.`,
+        `Traslado ${e.fromDepartment} → ${e.toDepartment} el ${e.date} (hace ${days} días).`,
+        `Sigue en: ${leftovers.map(({ g }) => g.name).join(", ")}.`,
+        `Permisos que le sobran: ${ents.map((x) => (x.system === x.name ? x.name : `${x.system}: ${x.name}`)).join(", ")}.`,
       ],
       entitlementIds: ids,
     });
@@ -126,8 +126,8 @@ export function detect(repo: Repo): Finding[] {
         type: "toxic_combination",
         severity: "high",
         principalId: pid,
-        title: `${repo.principalName(pid)} holds both ${a.entitlement.name} and ${b.entitlement.name}`,
-        facts: [`Violates rule "${rule.name}": ${rule.why}`, `${a.entitlement.name} via ${a.group.name}; ${b.entitlement.name} via ${b.group.name}.`],
+        title: `${repo.principalName(pid)} tiene a la vez ${a.entitlement.name} y ${b.entitlement.name}`,
+        facts: [`Incumple la regla «${rule.name}»: ${rule.why}`, `${a.entitlement.name} a través de ${a.group.name}; ${b.entitlement.name} a través de ${b.group.name}.`],
         entitlementIds: [a.entitlement.id, b.entitlement.id],
       });
       cover(pid, [a.entitlement.id, b.entitlement.id]);
@@ -150,10 +150,10 @@ export function detect(repo: Repo): Finding[] {
         type: "impossible_travel",
         severity: "high",
         principalId: p.id,
-        title: `${p.name}'s device checked in at ${clash.site} and logged in to ${login.system} from ${login.city} ${minutes} minutes apart`,
+        title: `El dispositivo de ${p.name} se registró en ${clash.site} y hubo un inicio de sesión en ${login.system} desde ${login.city} con ${minutes} minutos de diferencia`,
         facts: [
-          `Device: ${clash.time} at ${clash.site} (${clash.city}, ${clash.country}).`,
-          `${login.system} login: ${login.time} from ${login.city}, ${login.country} (IP ${login.ip}).`,
+          `Dispositivo: ${clash.time} en ${clash.site} (${clash.city}, ${clash.country}).`,
+          `Inicio de sesión en ${login.system}: ${login.time} desde ${login.city}, ${login.country} (IP ${login.ip}).`,
         ],
         entitlementIds: ["ent-vpn-general"],
       });
@@ -178,8 +178,8 @@ export function detect(repo: Repo): Finding[] {
         type: "peer_outlier",
         severity: "medium",
         principalId: p.id,
-        title: `${p.name} has ${ent.system === ent.name ? ent.name : `${ent.system}: ${ent.name}`}, which ${holders === 0 ? "none" : holders} of ${peers.length} ${p.department} peers have`,
-        facts: [`${holders}/${peers.length} active ${p.department} peers hold ${ent.name}.`, `Granted via ${a.group.name} on ${a.membership.grantedDate}.`],
+        title: `${p.name} tiene ${ent.name}, que ${holders === 0 ? "no tiene ninguno" : `solo tienen ${holders}`} de sus ${peers.length} compañeros de ${p.department}`,
+        facts: [`${holders}/${peers.length} compañeros activos de ${p.department} tienen ${ent.name}.`, `Concedido a través de ${a.group.name} el ${a.membership.grantedDate}.`],
         entitlementIds: [ent.id],
       });
     }

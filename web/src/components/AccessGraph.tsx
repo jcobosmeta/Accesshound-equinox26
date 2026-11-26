@@ -36,7 +36,7 @@ const COLUMN_GAP = 40;
 const sourceShort: Record<AccessPath["group"]["source"], string> = {
   "Active Directory": "AD",
   SaaS: "SaaS",
-  Devices: "Devices",
+  Devices: "Dispositivos",
 };
 
 /** PNG icons served from web/public/icons/ for each configured service. */
@@ -213,7 +213,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
     e.state === "flagged" ? skinVars.colors.error : active ? skinVars.colors.brand : skinVars.colors.neutralMedium;
 
   const principalSubtitle =
-    detail.kind === "person" ? `${detail.profile.title} · ${detail.profile.department}` : "Service account";
+    detail.kind === "person" ? `${detail.profile.title} · ${detail.profile.department}` : "Cuenta de servicio";
 
   const columnHeader = (text: string) => (
     <Text1 medium color={skinVars.colors.textSecondary}>
@@ -236,8 +236,8 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
         title={g.name}
         subtitle={
           g.state === "removed"
-            ? "Removed"
-            : `${sourceShort[g.source]} · since ${g.granted.slice(0, 4)}${g.ticketId ? ` · ${g.ticketId}` : ""}`
+            ? "Eliminado"
+            : `${sourceShort[g.source]} · desde ${g.granted.slice(0, 4)}${g.ticketId ? ` · ${g.ticketId}` : ""}`
         }
       />
     );
@@ -278,13 +278,13 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
         fill
         subtitle={
           state === "removed" ? (
-            `${e.system} · revoked`
+            `${e.system} · revocado`
           ) : (
             <>
-              {e.physical ? "Device" : e.system !== e.name ? e.system : "Service"}
+              {e.physical ? "Dispositivo" : e.system !== e.name ? e.system : "Servicio"}
               {e.risk !== "low" && (
                 <Text1 as="span" medium color={e.risk === "high" ? skinVars.colors.error : skinVars.colors.warning}>
-                  {` · ${e.risk} risk`}
+                  {` · riesgo ${e.risk === "high" ? "alto" : "medio"}`}
                 </Text1>
               )}
             </>
@@ -301,14 +301,14 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
           <Inline space="between" alignItems="center" wrap verticalSpace={8}>
             <Inline space={16} alignItems="center" wrap verticalSpace={8}>
               <Text1 regular color={skinVars.colors.textSecondary}>
-                {`${detail.access.length} access path${detail.access.length === 1 ? "" : "s"}`}
-                {flaggedCount > 0 ? ` · ${flaggedCount} flagged` : ""}
-                {removed.length ? ` · ${removed.length} revoked` : ""}
+                {`${detail.access.length} ${detail.access.length === 1 ? "vía de acceso" : "vías de acceso"}`}
+                {flaggedCount > 0 ? ` · ${flaggedCount} ${flaggedCount === 1 ? "señalada" : "señaladas"}` : ""}
+                {removed.length ? ` · ${removed.length} ${removed.length === 1 ? "revocada" : "revocadas"}` : ""}
               </Text1>
             </Inline>
             {(flagged.length > 0 || removed.length > 0) && (
               <Chip active={flaggedOnly} onPress={() => setFlaggedOnly((v) => !v)}>
-                {flaggedOnly && hiddenCount ? `Flagged only (${hiddenCount} hidden)` : "Flagged only"}
+                {flaggedOnly && hiddenCount ? `Solo señalados (${hiddenCount} ocultos)` : "Solo señalados"}
               </Chip>
             )}
           </Inline>
@@ -330,9 +330,9 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
           ) : (
             <>
               <div style={{ display: "grid", gridTemplateColumns: COLUMNS, columnGap: COLUMN_GAP }}>
-                {columnHeader(detail.kind === "person" ? "Person" : "Service account")}
-                {columnHeader("Member of")}
-                {columnHeader("Which grants")}
+                {columnHeader(detail.kind === "person" ? "Persona" : "Cuenta de servicio")}
+                {columnHeader("Miembro de")}
+                {columnHeader("Que da acceso a")}
               </div>
 
               <div
@@ -415,17 +415,17 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
           <Inline space={24} wrap verticalSpace={8} alignItems="center">
             {flagged.length > 0 && (
               <Text1 regular color={skinVars.colors.textSecondary}>
-                Red: the access this finding is about
+                En rojo: el acceso al que se refiere este hallazgo
               </Text1>
             )}
             {removed.length > 0 && (
               <Text1 regular color={skinVars.colors.textSecondary}>
-                Dashed: removed by an approved decision
+                Discontinuo: eliminado por una decisión aprobada
               </Text1>
             )}
             {!isMobile && (
               <Text1 regular color={skinVars.colors.textSecondary}>
-                Hover a box to trace its paths
+                Pasa el ratón por una caja para ver sus conexiones
               </Text1>
             )}
           </Inline>

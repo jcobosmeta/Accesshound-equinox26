@@ -84,7 +84,7 @@ class Store {
   decide(findingId: string, humanDecision: "approved" | "rejected", reviewer: string, note?: string): AuditEntry {
     const finding = this.finding(findingId);
     const stored = this.proposals.get(findingId);
-    if (!finding || !stored) throw new Error("No proposal to decide on for this finding.");
+    if (!finding || !stored) throw new Error("No hay ninguna propuesta sobre la que decidir en este hallazgo.");
     const { proposal, mode } = stored;
     const applied: string[] = [];
 
@@ -121,23 +121,23 @@ class Store {
         const before = c.memberships.length;
         c.memberships = c.memberships.filter((m) => !(m.principalId === principalId && m.groupId === action.target));
         const g = this.repo.group(action.target)?.name ?? action.target;
-        return before !== c.memberships.length ? `Removed ${this.repo.principalName(principalId)} from ${g}` : `Not a member of ${g} (nothing to do)`;
+        return before !== c.memberships.length ? `Se ha quitado a ${this.repo.principalName(principalId)} de ${g}` : `No es miembro de ${g} (no hay nada que hacer)`;
       }
       case "disable_account": {
         // Offboarding: drop every membership.
         const n = c.memberships.filter((m) => m.principalId === principalId).length;
         c.memberships = c.memberships.filter((m) => m.principalId !== principalId);
-        return `Disabled account ${this.repo.principalName(principalId)} (${n} group memberships removed)`;
+        return `Cuenta de ${this.repo.principalName(principalId)} desactivada (se ha quitado de ${n} grupos)`;
       }
       case "disable_badge": {
         const deviceGroups = new Set(c.groups.filter((g) => g.source === "Devices").map((g) => g.id));
         c.memberships = c.memberships.filter((m) => !(m.principalId === principalId && deviceGroups.has(m.groupId)));
-        return `Disabled device access for ${this.repo.principalName(principalId)}`;
+        return `Acceso a dispositivos desactivado para ${this.repo.principalName(principalId)}`;
       }
       case "reset_credentials":
-        return `Credentials reset requested for ${this.repo.principalName(principalId)}`;
+        return `Restablecimiento de credenciales solicitado para ${this.repo.principalName(principalId)}`;
       case "open_incident":
-        return `Security incident opened: ${action.reason}`;
+        return `Incidente de seguridad abierto: ${action.reason}`;
     }
   }
 }

@@ -35,42 +35,42 @@ const AS_OF = "2026-11-26";
 // ---------------------------------------------------------------- entitlements (strictly the 11 configured services)
 
 const entitlements: Entitlement[] = [
-  { id: "ent-confluence", system: "Confluence", name: "Confluence", description: "Corporate documentation and knowledge base", risk: "low", physical: false },
-  { id: "ent-sharepoint", system: "SharePoint", name: "SharePoint", description: "Shared files and corporate intranet sites", risk: "low", physical: false },
-  { id: "ent-jira", system: "Jira", name: "Jira", description: "Project tracking, sprints and change tickets", risk: "low", physical: false },
-  { id: "ent-movil-trabajo", system: "Device", name: "Móvil Trabajo", description: "Managed corporate mobile device with MDM and site check-in", risk: "low", physical: true },
+  { id: "ent-confluence", system: "Confluence", name: "Confluence", description: "Documentación corporativa y base de conocimiento", risk: "low", physical: false },
+  { id: "ent-sharepoint", system: "SharePoint", name: "SharePoint", description: "Archivos compartidos y sitios de la intranet corporativa", risk: "low", physical: false },
+  { id: "ent-jira", system: "Jira", name: "Jira", description: "Seguimiento de proyectos, sprints y tickets de cambio", risk: "low", physical: false },
+  { id: "ent-movil-trabajo", system: "Dispositivo", name: "Móvil Trabajo", description: "Móvil corporativo gestionado con MDM y registro en la sede", risk: "low", physical: true },
 
-  { id: "ent-vpn-general", system: "VPN", name: "VPN General", description: "Standard corporate remote access VPN", risk: "medium", physical: false },
-  { id: "ent-vpn-demo", system: "VPN", name: "VPN DEMO", description: "Remote VPN tunnel to client DEMO environments", risk: "medium", physical: false },
-  { id: "ent-vpn-lab", system: "VPN", name: "VPN Laboratorio", description: "Privileged VPN tunnel into R&D laboratory networks", risk: "high", physical: false },
-  { id: "ent-vpn-full", system: "VPN", name: "VPN Full", description: "Unrestricted full-network administrative VPN tunnel", risk: "high", physical: false },
+  { id: "ent-vpn-general", system: "VPN", name: "VPN General", description: "VPN corporativa estándar de acceso remoto", risk: "medium", physical: false },
+  { id: "ent-vpn-demo", system: "VPN", name: "VPN DEMO", description: "Túnel VPN remoto a los entornos DEMO de clientes", risk: "medium", physical: false },
+  { id: "ent-vpn-lab", system: "VPN", name: "VPN Laboratorio", description: "Túnel VPN privilegiado a las redes del laboratorio de I+D", risk: "high", physical: false },
+  { id: "ent-vpn-full", system: "VPN", name: "VPN Full", description: "Túnel VPN de administración sin restricciones a toda la red", risk: "high", physical: false },
 
-  { id: "ent-firebase", system: "Firebase", name: "Firebase", description: "Firebase console and production app database control", risk: "high", physical: false, duties: ["prod_data_admin"] },
-  { id: "ent-azure", system: "Azure", name: "Azure", description: "Azure cloud subscriptions, billing and IAM administration", risk: "high", physical: false, duties: ["cloud_iam_admin"] },
-  { id: "ent-descodificador-demo", system: "Device", name: "Descodificador DEMO", description: "DEMO set-top decoder device for test environments", risk: "high", physical: true },
+  { id: "ent-firebase", system: "Firebase", name: "Firebase", description: "Consola de Firebase y control de la base de datos de producción", risk: "high", physical: false, duties: ["prod_data_admin"] },
+  { id: "ent-azure", system: "Azure", name: "Azure", description: "Suscripciones de Azure, facturación y administración de IAM", risk: "high", physical: false, duties: ["cloud_iam_admin"] },
+  { id: "ent-descodificador-demo", system: "Dispositivo", name: "Descodificador DEMO", description: "Descodificador DEMO para entornos de pruebas", risk: "high", physical: true },
 ];
 
 // ---------------------------------------------------------------- groups (8)
 
 const groups: Group[] = [
-  { id: "g-all-staff", name: "All staff", source: "Active Directory", entitlementIds: ["ent-confluence", "ent-sharepoint", "ent-vpn-general", "ent-movil-trabajo"] },
+  { id: "g-all-staff", name: "Toda la plantilla", source: "Active Directory", entitlementIds: ["ent-confluence", "ent-sharepoint", "ent-vpn-general", "ent-movil-trabajo"] },
 
-  { id: "g-fin-staff", name: "Finance Jira", source: "SaaS", department: "Finance", entitlementIds: ["ent-jira"] },
-  { id: "g-fin-firebase", name: "Finance Firebase", source: "SaaS", department: "Finance", entitlementIds: ["ent-firebase"] },
-  { id: "g-fin-cloud", name: "Finance Azure", source: "SaaS", department: "Finance", entitlementIds: ["ent-azure"] },
+  { id: "g-fin-staff", name: "Jira de Finanzas", source: "SaaS", department: "Finanzas", entitlementIds: ["ent-jira"] },
+  { id: "g-fin-firebase", name: "Firebase de Finanzas", source: "SaaS", department: "Finanzas", entitlementIds: ["ent-firebase"] },
+  { id: "g-fin-cloud", name: "Azure de Finanzas", source: "SaaS", department: "Finanzas", entitlementIds: ["ent-azure"] },
 
   { id: "g-mkt-staff", name: "Marketing DEMO", source: "SaaS", department: "Marketing", entitlementIds: ["ent-vpn-demo"] },
 
-  { id: "g-it-admins", name: "IT Core Admins", source: "Active Directory", department: "IT", entitlementIds: ["ent-azure", "ent-vpn-full", "ent-vpn-lab"] },
+  { id: "g-it-admins", name: "Administradores de TI", source: "Active Directory", department: "TI", entitlementIds: ["ent-azure", "ent-vpn-full", "ent-vpn-lab"] },
   { id: "g-demo-lab", name: "Descodificador DEMO", source: "Devices", entitlementIds: ["ent-descodificador-demo"] },
 
-  { id: "g-eng-staff", name: "Engineering Platform", source: "SaaS", department: "Engineering", entitlementIds: ["ent-jira", "ent-firebase", "ent-vpn-demo"] },
+  { id: "g-eng-staff", name: "Plataforma de Ingeniería", source: "SaaS", department: "Ingeniería", entitlementIds: ["ent-jira", "ent-firebase", "ent-vpn-demo"] },
 ];
 
 const departmentGroup: Partial<Record<Department, string>> = {
-  Finance: "g-fin-staff",
+  Finanzas: "g-fin-staff",
   Marketing: "g-mkt-staff",
-  Engineering: "g-eng-staff",
+  Ingeniería: "g-eng-staff",
 };
 
 // ---------------------------------------------------------------- people (18)
@@ -79,32 +79,32 @@ type Seed = Omit<Person, "email" | "status" | "homeOffice"> & Partial<Pick<Perso
 
 const seeds: Seed[] = [
   // Department heads (4)
-  { id: "p-001", name: "Isabel Moreno", department: "Finance", title: "Head of Finance", startDate: "2018-02-01" },
-  { id: "p-002", name: "Daniel Vega", department: "Marketing", title: "Head of Marketing", startDate: "2019-05-13" },
-  { id: "p-003", name: "Raúl Castillo", department: "IT", title: "IT Manager", startDate: "2017-09-04" },
-  { id: "p-004", name: "Sofía Romero", department: "Engineering", title: "VP Engineering", startDate: "2020-01-07" },
+  { id: "p-001", name: "Isabel Moreno", department: "Finanzas", title: "Directora de Finanzas", startDate: "2018-02-01" },
+  { id: "p-002", name: "Daniel Vega", department: "Marketing", title: "Director de Marketing", startDate: "2019-05-13" },
+  { id: "p-003", name: "Raúl Castillo", department: "TI", title: "Responsable de TI", startDate: "2017-09-04" },
+  { id: "p-004", name: "Sofía Romero", department: "Ingeniería", title: "VP de Ingeniería", startDate: "2020-01-07" },
 
   // Finance (3 reports)
-  { id: "p-010", name: "Lucía Fernández", department: "Finance", title: "Billing Analyst", managerId: "p-001", startDate: "2021-04-12" },
-  { id: "p-011", name: "Jorge Blanco", department: "Finance", title: "Billing Analyst", managerId: "p-001", startDate: "2022-09-05" },
-  { id: "p-012", name: "Carmen Ortiz", department: "Finance", title: "Cloud Controller", managerId: "p-001", startDate: "2019-11-18" },
+  { id: "p-010", name: "Lucía Fernández", department: "Finanzas", title: "Analista de facturación", managerId: "p-001", startDate: "2021-04-12" },
+  { id: "p-011", name: "Jorge Blanco", department: "Finanzas", title: "Analista de facturación", managerId: "p-001", startDate: "2022-09-05" },
+  { id: "p-012", name: "Carmen Ortiz", department: "Finanzas", title: "Controller cloud", managerId: "p-001", startDate: "2019-11-18" },
 
   // Marketing (4 reports — Marta transferred from Finance; Carlos has impossible travel)
-  { id: "p-020", name: "Marta Ruiz", department: "Marketing", title: "Brand Manager", managerId: "p-002", startDate: "2020-06-01" },
-  { id: "p-060", name: "Carlos Méndez", department: "Marketing", title: "Growth Lead", managerId: "p-002", startDate: "2021-05-17" },
-  { id: "p-021", name: "Hugo Delgado", department: "Marketing", title: "Content Lead", managerId: "p-002", startDate: "2021-08-23" },
-  { id: "p-022", name: "Paula Serrano", department: "Marketing", title: "Digital Specialist", managerId: "p-002", startDate: "2022-03-07" },
+  { id: "p-020", name: "Marta Ruiz", department: "Marketing", title: "Brand manager", managerId: "p-002", startDate: "2020-06-01" },
+  { id: "p-060", name: "Carlos Méndez", department: "Marketing", title: "Responsable de growth", managerId: "p-002", startDate: "2021-05-17" },
+  { id: "p-021", name: "Hugo Delgado", department: "Marketing", title: "Responsable de contenidos", managerId: "p-002", startDate: "2021-08-23" },
+  { id: "p-022", name: "Paula Serrano", department: "Marketing", title: "Especialista digital", managerId: "p-002", startDate: "2022-03-07" },
 
   // IT (4 reports — 2 active sysadmins + 2 leavers)
-  { id: "p-030", name: "Javier Ortega", department: "IT", title: "Systems Administrator", managerId: "p-003", startDate: "2018-01-08", status: "left", endDate: "2026-09-30" },
-  { id: "p-031", name: "Óscar Núñez", department: "IT", title: "Systems Administrator", managerId: "p-003", startDate: "2019-07-15" },
-  { id: "p-032", name: "Beatriz León", department: "IT", title: "Systems Administrator", managerId: "p-003", startDate: "2021-02-01" },
-  { id: "p-035", name: "Pablo Díaz", department: "IT", title: "Cloud Backup Engineer", managerId: "p-003", startDate: "2017-03-01", status: "left", endDate: "2025-06-30" },
+  { id: "p-030", name: "Javier Ortega", department: "TI", title: "Administrador de sistemas", managerId: "p-003", startDate: "2018-01-08", status: "left", endDate: "2026-09-30" },
+  { id: "p-031", name: "Óscar Núñez", department: "TI", title: "Administrador de sistemas", managerId: "p-003", startDate: "2019-07-15" },
+  { id: "p-032", name: "Beatriz León", department: "TI", title: "Administrador de sistemas", managerId: "p-003", startDate: "2021-02-01" },
+  { id: "p-035", name: "Pablo Díaz", department: "TI", title: "Ingeniero de backup cloud", managerId: "p-003", startDate: "2017-03-01", status: "left", endDate: "2025-06-30" },
 
   // Engineering (3 reports — Elena + 3 active peers including VP Engineering)
-  { id: "p-040", name: "Elena Navarro", department: "Engineering", title: "Site Reliability Engineer", managerId: "p-004", startDate: "2021-11-08" },
-  { id: "p-041", name: "David Torres", department: "Engineering", title: "Backend Engineer", managerId: "p-004", startDate: "2020-04-20" },
-  { id: "p-042", name: "Laura Jiménez", department: "Engineering", title: "Frontend Engineer", managerId: "p-004", startDate: "2022-01-10" },
+  { id: "p-040", name: "Elena Navarro", department: "Ingeniería", title: "Ingeniera SRE", managerId: "p-004", startDate: "2021-11-08" },
+  { id: "p-041", name: "David Torres", department: "Ingeniería", title: "Ingeniero backend", managerId: "p-004", startDate: "2020-04-20" },
+  { id: "p-042", name: "Laura Jiménez", department: "Ingeniería", title: "Ingeniera frontend", managerId: "p-004", startDate: "2022-01-10" },
 ];
 
 function emailFor(name: string): string {
@@ -117,14 +117,14 @@ const people: Person[] = seeds.map((s) => ({
   ...s,
   email: emailFor(s.name),
   status: s.status ?? "active",
-  homeOffice: s.homeOffice ?? "Madrid HQ",
+  homeOffice: s.homeOffice ?? "Sede de Madrid",
 }));
 
 // ---------------------------------------------------------------- service accounts (2)
 
 const serviceAccounts: ServiceAccount[] = [
-  { id: "svc-backup-legacy", name: "svc-backup-legacy", description: "Nightly Azure backup job over VPN Full", ownerId: "p-035", createdDate: "2019-04-02" },
-  { id: "svc-ci-runner", name: "svc-ci-runner", description: "Firebase & Jira CI pipeline runner", ownerId: "p-040", createdDate: "2022-05-10" },
+  { id: "svc-backup-legacy", name: "svc-backup-legacy", description: "Copia de seguridad nocturna de Azure por VPN Full", ownerId: "p-035", createdDate: "2019-04-02" },
+  { id: "svc-ci-runner", name: "svc-ci-runner", description: "Ejecutor de CI para Firebase y Jira", ownerId: "p-040", createdDate: "2022-05-10" },
 ];
 
 // ---------------------------------------------------------------- memberships
@@ -173,10 +173,10 @@ grant("svc-ci-runner", "g-eng-staff", "2022-05-10");
 // ---------------------------------------------------------------- HR events
 
 const hrEvents: HrEvent[] = [
-  ...people.map((p) => ({ personId: p.id, date: p.startDate, type: "hire" as const, toDepartment: p.id === "p-020" ? ("Finance" as const) : p.department })),
-  { personId: "p-020", date: "2026-03-02", type: "transfer", fromDepartment: "Finance", toDepartment: "Marketing", note: "Internal move: Cloud Controller → Brand Manager" },
-  { personId: "p-035", date: "2025-06-30", type: "leave", fromDepartment: "IT", note: "Resigned" },
-  { personId: "p-030", date: "2026-09-30", type: "leave", fromDepartment: "IT", note: "Resigned — joined a competitor" },
+  ...people.map((p) => ({ personId: p.id, date: p.startDate, type: "hire" as const, toDepartment: p.id === "p-020" ? ("Finanzas" as const) : p.department })),
+  { personId: "p-020", date: "2026-03-02", type: "transfer", fromDepartment: "Finanzas", toDepartment: "Marketing", note: "Cambio interno: Controller cloud → Brand manager" },
+  { personId: "p-035", date: "2025-06-30", type: "leave", fromDepartment: "TI", note: "Baja voluntaria" },
+  { personId: "p-030", date: "2026-09-30", type: "leave", fromDepartment: "TI", note: "Baja voluntaria: se ha ido a la competencia" },
 ];
 
 // ---------------------------------------------------------------- tickets
@@ -188,7 +188,7 @@ const tickets: AccessTicket[] = [
     entitlementId: "ent-azure",
     requestedBy: "p-001",
     approvedBy: "p-001",
-    justification: "Promoted to Cloud Controller — needs Azure billing and subscription administration.",
+    justification: "Ascendida a Controller cloud: necesita administrar la facturación y las suscripciones de Azure.",
     approvedDate: "2021-01-11",
   },
   {
@@ -197,7 +197,7 @@ const tickets: AccessTicket[] = [
     entitlementId: "ent-azure",
     requestedBy: "p-001",
     approvedBy: "p-001",
-    justification: "Temporary: cover Azure cloud administration while Carmen Ortiz is on parental leave.",
+    justification: "Temporal: cubrir la administración de Azure mientras Carmen Ortiz está de baja parental.",
     approvedDate: "2025-08-01",
     expiresDate: "2025-09-30",
   },
@@ -207,7 +207,7 @@ const tickets: AccessTicket[] = [
     entitlementId: "ent-descodificador-demo",
     requestedBy: "p-004",
     approvedBy: "CISO (Gonzalo Martín)",
-    justification: "Joins the DEMO device on-call rotation; needs a Descodificador DEMO device for live incidents.",
+    justification: "Entra en la guardia de dispositivos DEMO; necesita un Descodificador DEMO para incidencias en directo.",
     approvedDate: "2026-04-15",
     expiresDate: "2027-03-31",
   },
@@ -218,7 +218,7 @@ const tickets: AccessTicket[] = [
 const badgeEvents: BadgeEvent[] = [];
 const loginEvents: LoginEvent[] = [];
 
-const MADRID = { site: "Madrid HQ", city: "Madrid", country: "Spain" };
+const MADRID = { site: "la sede de Madrid", city: "Madrid", country: "España" };
 const workdays = ["2026-11-18", "2026-11-19", "2026-11-20", "2026-11-23", "2026-11-24", "2026-11-25"];
 
 // Tiny deterministic PRNG so the noise is the same every run.
@@ -235,7 +235,7 @@ for (const p of people.filter((x) => x.status === "active")) {
     badgeEvents.push({ personId: p.id, doorEntitlementId: "ent-movil-trabajo", time: `${day}T${pad(h)}:${pad(m)}:00+01:00`, ...MADRID, result: "granted" });
   }
   if (rand() < 0.5) {
-    loginEvents.push({ principalId: p.id, system: "VPN General", time: `2026-11-2${Math.floor(rand() * 5)}T2${Math.floor(rand() * 2)}:${pad(Math.floor(rand() * 60))}:00+01:00`, city: "Madrid", country: "Spain", ip: `83.44.${Math.floor(rand() * 255)}.${Math.floor(rand() * 255)}` });
+    loginEvents.push({ principalId: p.id, system: "VPN General", time: `2026-11-2${Math.floor(rand() * 5)}T2${Math.floor(rand() * 2)}:${pad(Math.floor(rand() * 60))}:00+01:00`, city: "Madrid", country: "España", ip: `83.44.${Math.floor(rand() * 255)}.${Math.floor(rand() * 255)}` });
   }
 }
 
@@ -248,8 +248,8 @@ badgeEvents.push({ personId: "p-030", doorEntitlementId: "ent-movil-trabajo", ti
 badgeEvents.push({ personId: "p-030", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-14T22:47:00+01:00", ...MADRID, result: "granted" });
 
 // Case 3 — svc-backup-legacy still logs in over VPN Full / Azure from an unowned host.
-loginEvents.push({ principalId: "svc-backup-legacy", system: "Azure", time: "2026-11-20T02:00:00+01:00", city: "Madrid", country: "Spain", ip: "10.20.4.17" });
-loginEvents.push({ principalId: "svc-backup-legacy", system: "VPN Full", time: "2026-11-25T02:00:00+01:00", city: "Madrid", country: "Spain", ip: "10.20.4.17" });
+loginEvents.push({ principalId: "svc-backup-legacy", system: "Azure", time: "2026-11-20T02:00:00+01:00", city: "Madrid", country: "España", ip: "10.20.4.17" });
+loginEvents.push({ principalId: "svc-backup-legacy", system: "VPN Full", time: "2026-11-25T02:00:00+01:00", city: "Madrid", country: "España", ip: "10.20.4.17" });
 
 // Case 5 — Carlos Méndez: Móvil Trabajo check-in in Madrid at 09:12, VPN General login from Lagos at 09:31.
 badgeEvents.push({ personId: "p-060", doorEntitlementId: "ent-movil-trabajo", time: "2026-11-24T09:12:00+01:00", ...MADRID, result: "granted" });
@@ -260,9 +260,9 @@ loginEvents.push({ principalId: "p-060", system: "VPN General", time: "2026-11-2
 const sodRules: SodRule[] = [
   {
     id: "sod-firebase-azure",
-    name: "Firebase + Azure admin",
+    name: "Administración de Firebase + Azure",
     duties: ["prod_data_admin", "cloud_iam_admin"],
-    why: "One person with both Firebase production control and Azure IAM admin could alter live data and cover cloud audit logs.",
+    why: "Una persona con control de Firebase en producción y administración de IAM en Azure podría alterar datos reales y ocultar los registros de auditoría de la nube.",
   },
 ];
 

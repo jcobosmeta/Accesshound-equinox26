@@ -1,7 +1,7 @@
 // Domain model for AccessHound. Everything the detectors and the agent see
 // comes from a `Company` snapshot built from these types.
 
-export type Department = "Finance" | "Marketing" | "IT" | "Engineering";
+export type Department = "Finanzas" | "Marketing" | "TI" | "Ingeniería";
 
 export type Risk = "low" | "medium" | "high";
 
@@ -15,7 +15,7 @@ export interface Person {
   status: "active" | "left";
   startDate: string; // ISO date
   endDate?: string; // ISO date, set when status === "left"
-  homeOffice: string; // e.g. "Madrid HQ"
+  homeOffice: string; // e.g. "Sede de Madrid"
 }
 
 export interface ServiceAccount {

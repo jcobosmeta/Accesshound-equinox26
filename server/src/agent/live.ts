@@ -48,8 +48,9 @@ How to work:
 How to write the proposal (it is shown on a card, so keep it tight):
 - headline: one sentence of at most 25 words that a busy manager understands.
 - explanation: at most four short sentences: what is wrong, why it matters, what you recommend. Leave the details to the evidence.
-- evidence: one verified fact per item, with the source, names and ids. Write dates as "14 Nov 2026" and times as "22:47".
+- evidence: one verified fact per item, with the source, names and ids. Write dates as "14 nov 2026" and times as "22:47".
 - Plain language: no jargon like "entitlement" or "principal" in the headline or explanation.
+- Write everything the reviewer sees in Spanish (Spain): your short notes between lookups, the headline, explanation, evidence and each action's reason. Keep names, ids, group names and system names exactly as the tools return them.
 - Finish by calling submit_proposal exactly once.`;
 
 /** Called with each model response; used by `npm run eval-agent` to add up token usage. */

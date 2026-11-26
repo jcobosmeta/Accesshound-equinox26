@@ -282,7 +282,7 @@ export function investigate(findingId: string, mode: AgentMode | undefined, onEv
   source.onerror = () => {
     if (finished) return;
     finish();
-    onEvent({ type: "error", message: "Lost the connection to the agent." });
+    onEvent({ type: "error", message: "Se ha perdido la conexión con el agente." });
     onEvent({ type: "done" });
   };
   return finish;

@@ -32,21 +32,21 @@ export class ErrorBoundary extends React.Component<Props, { error?: Error }> {
     if (this.props.fullScreen) {
       return (
         <ErrorFeedbackScreen
-          title="AccessHound hit a problem"
-          description="Reloading usually fixes it. The demo data lives on the server, so nothing is lost."
+          title="AccessHound ha tenido un problema"
+          description="Recargar suele solucionarlo. Los datos de la demo están en el servidor, así que no se pierde nada."
           errorReference={error.message}
-          primaryButton={<ButtonPrimary onPress={() => location.reload()}>Reload</ButtonPrimary>}
+          primaryButton={<ButtonPrimary onPress={() => location.reload()}>Recargar</ButtonPrimary>}
         />
       );
     }
     return (
       <EmptyStateCard
         asset={<IconErrorRegular size="100%" color={skinVars.colors.error} />}
-        title={this.props.title ?? "Something went wrong here"}
+        title={this.props.title ?? "Algo ha fallado aquí"}
         description={error.message}
         button={
           <ButtonPrimary small onPress={() => this.setState({ error: undefined })}>
-            Try again
+            Reintentar
           </ButtonPrimary>
         }
       />

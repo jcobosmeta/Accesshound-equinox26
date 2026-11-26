@@ -1,15 +1,12 @@
 import {
   Box,
   ButtonSecondary,
-  Grid,
-  GridItem,
   Inline,
   MainNavigationBar,
   NavigationBarAction,
   NavigationBarActionGroup,
   ResponsiveLayout,
   Stack,
-  Text2,
   Text3,
   skinVars,
   useDialog,
@@ -20,10 +17,10 @@ import IconRefreshRegular from "@telefonica/mistica-icons/icon-refresh-regular";
 import IconShieldLockRegular from "@telefonica/mistica-icons/icon-shield-lock-regular";
 import * as React from "react";
 import { api, investigate, type AgentEvent, type AuditEntry, type Finding, type OrgGraph, type Summary } from "./api";
+import { AnalysesView, type Analysis } from "./components/AnalysesView";
 import { AuditTrail } from "./components/AuditTrail";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindingDetail } from "./components/FindingDetail";
-import { FindingsList } from "./components/FindingsList";
 import { OrgRiskGraph } from "./components/OrgRiskGraph";
 import { PrincipalInspector } from "./components/PrincipalInspector";
 import { SummaryBand } from "./components/SummaryBand";
@@ -32,7 +29,23 @@ import { forgetRevocations } from "./usePrincipal";
 
 /** Investigations that stream at once; the rest wait in a queue. */
 const MAX_PARALLEL = 4;
-const QUEUED = "Queued: starts when another investigation finishes.";
+const QUEUED = "En cola: empezará cuando termine otra investigación.";
+
+const ANALYSES_KEY = "accesshound.analyses";
+const loadAnalyses = (): Analysis[] => {
+  try {
+    return JSON.parse(localStorage.getItem(ANALYSES_KEY) ?? "[]") as Analysis[];
+  } catch {
+    return [];
+  }
+};
+const saveAnalyses = (analyses: Analysis[]) => {
+  try {
+    localStorage.setItem(ANALYSES_KEY, JSON.stringify(analyses));
+  } catch {
+    // Storage unavailable (private window): analyses just last for this page load.
+  }
+};
 
 const Brand = () => (
   <Inline space={8} alignItems="center">
@@ -59,6 +72,10 @@ export function App() {
   /** Bumped whenever access may have changed, so the access map & risk graph refetch. */
   const [dataVersion, setDataVersion] = React.useState(0);
   const [loadError, setLoadError] = React.useState<string>();
+  /** Analyses started from the Findings tab; nothing shows there until the first one. */
+  const [analyses, setAnalyses] = React.useState<Analysis[]>(loadAnalyses);
+  const [openAnalysisId, setOpenAnalysisId] = React.useState<string | undefined>(() => loadAnalyses().at(-1)?.id);
+  React.useEffect(() => saveAnalyses(analyses), [analyses]);
   const { openSnackbar } = useSnackbar();
   const { confirm } = useDialog();
   const { isTabletOrSmaller } = useScreenSize();
@@ -83,10 +100,30 @@ export function App() {
     refresh();
   }, [refresh]);
 
-  // Keep a valid finding selection for the Findings tab.
+  const openAnalysis = analyses.find((a) => a.id === openAnalysisId);
+  const analysisFindings = React.useMemo(() => {
+    if (!openAnalysis) return [];
+    const ids = new Set(openAnalysis.findingIds);
+    return findings?.filter((f) => ids.has(f.id)) ?? [];
+  }, [findings, openAnalysis]);
+
+  // Close the open finding when it isn't part of the expanded analysis.
   React.useEffect(() => {
-    if (findings?.length && !findings.some((f) => f.id === selectedFindingId)) setSelectedFindingId(findings[0]!.id);
-  }, [findings, selectedFindingId]);
+    if (selectedFindingId && !analysisFindings.some((f) => f.id === selectedFindingId)) setSelectedFindingId(undefined);
+  }, [analysisFindings, selectedFindingId]);
+
+  const startAnalysis = () => {
+    if (!findings) return;
+    const analysis: Analysis = {
+      id: `AN-${Date.now()}`,
+      number: (analyses.at(-1)?.number ?? 0) + 1,
+      startedAt: new Date().toISOString(),
+      findingIds: findings.map((f) => f.id),
+    };
+    setAnalyses((list) => [...list, analysis]);
+    setOpenAnalysisId(analysis.id);
+    setSelectedFindingId(undefined);
+  };
 
   const handleSelectPrincipal = React.useCallback((principalId: string | undefined) => {
     setSelectedPrincipalId(principalId);
@@ -141,12 +178,10 @@ export function App() {
     startQueued.current();
   }, []);
 
-  const isRunning = (id: string) => !!traces[id] && !traces[id].some((e) => e.type === "done");
-  const notStarted = findings?.filter((f) => f.status === "open" && !isRunning(f.id)) ?? [];
-  const investigateAll = () => {
-    runAgent(notStarted.map((f) => f.id));
+  const investigateAll = (findingIds: string[]) => {
+    runAgent(findingIds);
     openSnackbar({
-      message: `Investigating ${notStarted.length} findings, up to ${MAX_PARALLEL} at a time.`,
+      message: `Investigando ${findingIds.length} hallazgos, hasta ${MAX_PARALLEL} a la vez.`,
       type: "INFORMATIVE",
     });
   };
@@ -159,10 +194,12 @@ export function App() {
         openSnackbar({
           message:
             decision === "approved"
-              ? `Approved. ${changes ? `${changes} change${changes > 1 ? "s" : ""} applied.` : "No access changed."} Logged as ${
-                  entry.id
-                }.`
-              : `Rejected. Nothing changed. Logged as ${entry.id}.`,
+              ? `Aprobado. ${
+                  changes
+                    ? `${changes} ${changes > 1 ? "cambios aplicados" : "cambio aplicado"}.`
+                    : "No ha cambiado ningún acceso."
+                } Registrado como ${entry.id}.`
+              : `Rechazado. No ha cambiado nada. Registrado como ${entry.id}.`,
           type: "INFORMATIVE",
         });
         setDataVersion((v) => v + 1);
@@ -176,10 +213,11 @@ export function App() {
 
   const reset = () =>
     confirm({
-      title: "Reset the demo?",
-      message: "This restores the original access data and clears every proposal and the audit trail.",
-      acceptText: "Reset",
-      cancelText: "Cancel",
+      title: "¿Restablecer la demo?",
+      message:
+        "Se restauran los datos de acceso originales y se borran todas las propuestas, los análisis y el registro de auditoría.",
+      acceptText: "Restablecer",
+      cancelText: "Cancelar",
       destructive: true,
       onAccept: async () => {
         await api.reset();
@@ -187,38 +225,26 @@ export function App() {
         queue.current = [];
         setQueued(new Set());
         setTraces({});
+        setAnalyses([]);
+        setOpenAnalysisId(undefined);
         setDataVersion((v) => v + 1);
         await refresh();
-        openSnackbar({ message: "Demo data restored.", type: "INFORMATIVE" });
+        openSnackbar({ message: "Datos de la demo restaurados.", type: "INFORMATIVE" });
       },
     });
 
-  const selectedFinding = findings?.find((f) => f.id === selectedFindingId);
-  const auditForSelected = selectedFinding ? audit.filter((e) => e.findingId === selectedFinding.id).at(-1) : undefined;
   const openFindingsCount = findings?.filter((f) => f.status !== "approved" && f.status !== "resolved").length ?? 0;
 
-  const list = (
-    <FindingsList
-      findings={findings}
-      selectedId={selectedFindingId}
-      onSelect={setSelectedFindingId}
-      queued={queued}
-      notStartedCount={notStarted.length}
-      onInvestigateAll={investigateAll}
-      error={loadError}
-      onRetry={refresh}
-    />
-  );
-
-  const detail = selectedFinding && (
-    <ErrorBoundary key={selectedFinding.id} title={`Couldn't show the finding for ${selectedFinding.principalName}`}>
+  const renderDetail = (finding: Finding) => (
+    <ErrorBoundary key={finding.id} title={`No se puede mostrar el hallazgo de ${finding.principalName}`}>
       <FindingDetail
-        finding={selectedFinding}
-        trace={traces[selectedFinding.id]}
-        auditEntry={auditForSelected}
+        compact
+        finding={finding}
+        trace={traces[finding.id]}
+        auditEntry={audit.filter((e) => e.findingId === finding.id).at(-1)}
         dataVersion={dataVersion}
-        onInvestigate={() => runAgent([selectedFinding.id])}
-        onDecide={(decision, reviewer, note) => decide(selectedFinding.id, decision, reviewer, note)}
+        onInvestigate={() => runAgent([finding.id])}
+        onDecide={(decision, reviewer, note) => decide(finding.id, decision, reviewer, note)}
       />
     </ErrorBoundary>
   );
@@ -229,14 +255,17 @@ export function App() {
         logo={<Brand />}
         selectedIndex={view}
         sections={[
-          { title: "Risk graph", onPress: () => setView(0) },
-          { title: `Findings${openFindingsCount ? ` (${openFindingsCount})` : ""}`, onPress: () => setView(1) },
-          { title: `Audit trail${audit.length ? ` (${audit.length})` : ""}`, onPress: () => setView(2) },
+          { title: "Mapa de riesgo", onPress: () => setView(0) },
+          {
+            title: `Hallazgos${analyses.length && openFindingsCount ? ` (${openFindingsCount})` : ""}`,
+            onPress: () => setView(1),
+          },
+          { title: `Auditoría${audit.length ? ` (${audit.length})` : ""}`, onPress: () => setView(2) },
         ]}
         right={
           isTabletOrSmaller ? (
             <NavigationBarActionGroup>
-              <NavigationBarAction aria-label="Reset demo" onPress={reset}>
+              <NavigationBarAction aria-label="Restablecer la demo" onPress={reset}>
                 <IconRefreshRegular color="currentColor" />
               </NavigationBarAction>
             </NavigationBarActionGroup>
@@ -244,19 +273,19 @@ export function App() {
             <Inline space={16} alignItems="center">
               {summary && <ModeTag mode={summary.agentMode} />}
               <ButtonSecondary small StartIcon={IconRefreshRegular} onPress={reset}>
-                Reset demo
+                Restablecer
               </ButtonSecondary>
             </Inline>
           )
         }
       />
-      {view !== 0 && <SummaryBand summary={summary} findings={findings} graph={graph} />}
+      {(view === 2 || (view === 1 && analyses.length > 0)) && <SummaryBand summary={summary} findings={findings} graph={graph} />}
 
       {view === 0 ? (
         <div style={{ maxWidth: 1520, margin: "0 auto", padding: isTabletOrSmaller ? "12px 12px 40px" : "16px 24px 48px" }}>
           <Stack space={32}>
             <div ref={graphSectionRef}>
-              <ErrorBoundary title="Couldn't draw the organization risk map">
+              <ErrorBoundary title="No se puede dibujar el mapa de riesgo de la organización">
                 <OrgRiskGraph
                   graph={graph}
                   summary={summary}
@@ -271,7 +300,7 @@ export function App() {
 
             {selectedPrincipalId && (
               <div ref={inspectorRef} style={{ scrollMarginTop: 16 }}>
-                <ErrorBoundary key={selectedPrincipalId} title="Couldn't load the selected user's details">
+                <ErrorBoundary key={selectedPrincipalId} title="No se pueden cargar los datos del usuario seleccionado">
                   <PrincipalInspector
                     principalId={selectedPrincipalId}
                     findings={findings ?? []}
@@ -294,16 +323,23 @@ export function App() {
           <Box paddingY={24}>
             {view === 2 ? (
               <AuditTrail entries={audit} />
-            ) : isTabletOrSmaller ? (
-              <Stack space={32}>
-                {list}
-                {detail}
-              </Stack>
             ) : (
-              <Grid columns={12} gap={32}>
-                <GridItem columnSpan={4}>{list}</GridItem>
-                <GridItem columnSpan={8}>{detail ?? <Text2 regular>Select a finding.</Text2>}</GridItem>
-              </Grid>
+              <AnalysesView
+                analyses={analyses}
+                findings={findings}
+                audit={audit}
+                onStart={startAnalysis}
+                error={loadError}
+                onRetry={refresh}
+                openId={openAnalysisId}
+                onOpen={setOpenAnalysisId}
+                selectedFindingId={selectedFindingId}
+                onSelectFinding={setSelectedFindingId}
+                queued={queued}
+                traces={traces}
+                onInvestigateAll={investigateAll}
+                renderDetail={renderDetail}
+              />
             )}
           </Box>
         </ResponsiveLayout>
