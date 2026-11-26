@@ -11,6 +11,22 @@ import { ProposalSchema, type Emit, type Proposal } from "./types.js";
 
 const MODEL = process.env.AGENT_MODEL ?? "claude-opus-5-5";
 const EFFORT = (process.env.AGENT_EFFORT ?? "medium") as "low" | "medium" | "high";
+// Server-side fallbacks: if the model declines a request, the API retries it on a fallback model
+// within the same call. Some proxies (e.g. LiteLLM routing to Bedrock or Vertex) reject the
+// parameter; set AGENT_FALLBACKS=off for those.
+const FALLBACKS = process.env.AGENT_FALLBACKS !== "off";
+// The SDK's tool runner uses message threads by default: after the first turn it sends only the new
+// messages and the API remembers the rest. Only Anthropic's API keeps threads; through a proxy
+// (ANTHROPIC_BASE_URL set, e.g. LiteLLM) the backend gets tool results with no history and returns a 400.
+const THREADS = !process.env.ANTHROPIC_BASE_URL;
+
+/** Request settings shared by the live agent and `npm run check-agent`, so the check tests what the agent sends. */
+export const agentRequestSettings = {
+  model: MODEL,
+  output_config: { effort: EFFORT },
+  cache_control: { type: "ephemeral" as const },
+  ...(FALLBACKS ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+};
 
 const SYSTEM = `You are AccessHound's access-review agent. A rule-based detector has flagged a possible access problem at a company. Your job is to investigate it, explain it in plain language, and propose what to do. A human reviewer makes the final decision; you never change access yourself.
 
@@ -54,13 +70,10 @@ export async function investigateLive(repo: Repo, finding: Finding, emit: Emit):
   });
 
   const runner = client.beta.messages.toolRunner({
-    model: MODEL,
+    ...agentRequestSettings,
+    ...(THREADS ? {} : { thread: false as const }),
     max_tokens: 16000,
     max_iterations: 15,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { effort: EFFORT },
-    cache_control: { type: "ephemeral" },
     system: SYSTEM,
     tools: [...tools, submit],
     messages: [
@@ -72,14 +85,27 @@ export async function investigateLive(repo: Repo, finding: Finding, emit: Emit):
   });
 
   for await (const message of runner) {
-    for (const block of message.content) {
-      if (block.type === "text" && block.text.trim()) emit({ type: "text", text: block.text });
-    }
     if (message.stop_reason === "refusal") {
       emit({ type: "error", message: "The model declined to continue this investigation." });
       break;
     }
-    if (proposal) break; // submit_proposal ran; no need for another turn
+    const submitCall = message.content.find((b) => b.type === "tool_use" && b.name === "submit_proposal");
+    // Text next to submit_proposal restates the proposal, which the UI already shows as a card.
+    for (const block of message.content) {
+      if (block.type === "text" && block.text.trim() && !submitCall) emit({ type: "text", text: block.text });
+    }
+    // The runner yields a message before running its tools. Stop here on a valid proposal: otherwise
+    // the runner sends the tool result back and the model spends another turn writing a recap.
+    // An invalid one falls through: the runner returns the validation error and the model retries.
+    if (submitCall?.type === "tool_use") {
+      const parsed = ProposalSchema.safeParse(submitCall.input);
+      if (parsed.success) {
+        proposal = parsed.data;
+        emit({ type: "proposal", proposal });
+        break;
+      }
+    }
+    if (proposal) break;
   }
 
   if (!proposal) emit({ type: "error", message: "The agent finished without submitting a proposal." });

@@ -6,6 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "detect": "tsx src/cli/detect.ts",
+    "check-agent": "tsx src/cli/check-agent.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
