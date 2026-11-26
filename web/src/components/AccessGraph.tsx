@@ -393,7 +393,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
                     onHover={setHoverId}
                     icon={
                       detail.kind === "person" ? (
-                        <Avatar size={32} initials={initials(detail.profile.name)} />
+                        <Avatar size={32} src={detail.profile.avatarUrl} initials={initials(detail.profile.name)} />
                       ) : (
                         <Avatar size={32} Icon={IconRobotRegular} />
                       )

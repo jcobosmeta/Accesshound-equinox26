@@ -17,7 +17,7 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
    - risky combinations, like holding both Firebase and Azure admin
    - a work phone registering in Madrid while the VPN login comes from abroad
 3. **Investigate.** For each finding, an agent uses tools to check the HR record, group memberships and device log, then explains it in plain language:
-   *"Marta pasó a Marketing en marzo y sigue teniendo Jira y Azure de Finanzas."*
+   *"Patricia pasó a Diseño en marzo y sigue teniendo VPN DEMO y Firebase de Marketing."*
 4. **Decide.** The agent proposes **revoke** or **keep**. A human approves or rejects it, and every decision is written to an audit trail, ready for NIS2.
 
 ```
@@ -33,19 +33,17 @@ BloodHound shows attack paths in Active Directory. **AccessHound** maps all acce
 
 ## Demo scenario
 
-A fake company, Brisa Networks, with 18 people and 2 service accounts. The UI and the agent's output are in Spanish. There are 5 planted access problems:
+A fake company, FCYBERL, built from the Future Cybersecurity Lab team: 24 people (real GitHub names and photos, invented roles) and 1 service account. The UI and the agent's output are in Spanish. There are 3 planted access problems:
 
 | # | Problem | What gives it away |
 |---|---------|--------------------|
-| 1 | Role-change leftover | Marta moved from Finance to Marketing and still has Finance's Jira and Azure |
-| 2 | Leaver's devices | Javier left for a competitor, and his work phone and the Descodificador DEMO were used at night at Madrid HQ |
-| 3 | Orphaned service account | svc-backup-legacy's owner is gone, and it still has IT admin rights |
-| 4 | Toxic combination | Lucía has Firebase and Azure admin; the Azure access came from a temporary ticket that expired |
-| 5 | Impossible travel | Carlos's phone registered in Madrid, and 19 minutes later his VPN login came from Lagos |
+| 1 | Role-change leftover | Patricia moved from Marketing to Design and still has Marketing's VPN DEMO and Firebase |
+| 2 | Toxic combination | Daniel has Firebase and Azure admin; the Azure access came from a temporary ticket that expired |
+| 3 | Impossible travel | Carlos's phone registered in Madrid, and 19 minutes later their VPN login came from Lagos |
 
-The 5-minute demo runs on that data end to end ([docs/DEMO.md](docs/DEMO.md)). AccessHound maps the access and flags the five problems. The agent investigates each one and explains it. A person approves or rejects each proposal, the audit trail fills in, and the risk map calms down.
+The 5-minute demo runs on that data end to end ([docs/DEMO.md](docs/DEMO.md)). AccessHound maps the access and flags the problems. The agent investigates each one and explains it. A person approves or rejects each proposal, the audit trail fills in, and the risk map calms down.
 
-There is also a sixth, decoy case: Elena, an engineer, is the only one in her team with a Descodificador DEMO. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
+There is also a fourth, decoy case: Marcos, on the AI team, is the only one with a Descodificador DEMO. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
 
 ## Architecture
 
@@ -55,7 +53,7 @@ TypeScript throughout. The UI is React built on [Mística](https://github.com/te
 server/src/
   data/
     types.ts        domain model: people, service accounts, groups, entitlements, HR events, tickets, badge + login logs
-    company.ts      the demo company (18 people, deterministic) with the planted cases
+    company.ts      the demo company (24 people, deterministic) with the planted cases
     repo.ts         read-only queries shared by detectors, agent tools and API
   detectors/        rule-based: leaver access, orphaned service account, role-change leftover,
                     separation-of-duties, impossible travel, peer outlier

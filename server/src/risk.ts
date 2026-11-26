@@ -23,6 +23,7 @@ export interface GraphNode {
   id: string;
   kind: "org" | "person" | "service";
   name: string;
+  avatarUrl?: string;
   subtitle: string;
   department: string;
   status: "active" | "left" | "service" | "org";
@@ -273,9 +274,14 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
     findingsByPrincipal.set(f.principalId, list);
   }
 
+  // A head is someone with no manager who has people reporting to them; managerless people without
+  // reports are "transversal" nodes that hang directly from the company.
+  const managerIds = new Set(c.people.flatMap((p) => (p.managerId ? [p.managerId] : [])));
+  const isHead = (p: { id: string; managerId?: string }) => !p.managerId && managerIds.has(p.id);
+
   const headByDept = new Map<string, string>();
   for (const p of c.people) {
-    if (!p.managerId) headByDept.set(p.department, p.id);
+    if (isHead(p)) headByDept.set(p.department, p.id);
   }
 
   const personNodes: GraphNode[] = [];
@@ -294,6 +300,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       id: p.id,
       kind: "person",
       name: p.name,
+      avatarUrl: p.avatarUrl,
       subtitle: p.title,
       department: p.department,
       status: p.status,
@@ -313,7 +320,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
       from: p.managerId ?? ORG_ROOT_ID,
       to: p.id,
       kind: "hierarchy",
-      label: p.managerId ? "Depende de" : `Responsable de ${p.department}`,
+      label: p.managerId ? "Depende de" : isHead(p) ? `Responsable de ${p.department}` : "Equipo transversal",
       dashed: p.status === "left",
       risk: p.status === "left" && activeFindings.length > 0 ? "high" : undefined,
     });
@@ -365,7 +372,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
   const nodeById = new Map(principalNodes.map((n) => [n.id, n]));
 
   // Company root node with aggregate risk metrics
-  const avgRisk = Math.round(principalNodes.reduce((s, n) => s + n.riskScore, 0) / Math.max(1, principalNodes.length));
+  const avgRisk = c.displayRisk ?? Math.round(principalNodes.reduce((s, n) => s + n.riskScore, 0) / Math.max(1, principalNodes.length));
   const maxRisk = Math.max(0, ...principalNodes.map((n) => n.riskScore));
   const atRiskCount = principalNodes.filter((n) => n.riskScore >= 50 || Boolean(n.topFindingSeverity)).length;
 
@@ -417,7 +424,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
     }
 
     // Shared specialized / high-risk role group links
-    const isRoleGroup = !g.department || g.id === "g-fin-firebase" || g.id === "g-fin-cloud" || g.id === "g-it-admins" || g.id === "g-demo-lab";
+    const isRoleGroup = !g.department || g.id === "g-inn-firebase" || g.id === "g-inn-cloud" || g.id === "g-it-admins" || g.id === "g-demo-lab";
     if (isRoleGroup && hasHighRisk && members.length >= 2) {
       const uniqueMembers = [...new Set(members)];
       // Connect members sequentially within the group so everyone sharing the high-risk role is linked without O(n^2) clutter
@@ -456,7 +463,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
   }
 
   // 3. Executive ring connecting department heads & team peer mesh connecting department colleagues
-  const deptHeads = c.people.filter((p) => !p.managerId);
+  const deptHeads = c.people.filter(isHead);
   for (let i = 0; i < deptHeads.length - 1; i++) {
     addEdge({
       from: deptHeads[i]!.id,

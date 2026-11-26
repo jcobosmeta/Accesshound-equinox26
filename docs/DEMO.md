@@ -14,7 +14,7 @@ Do these 15 minutes before, on the machine you present from.
 - [ ] Open http://localhost:8787. The header must say **Agente en vivo**. If it says **Agente en reproducción**, the key wasn't picked up: check `server/.env` and restart.
 - [ ] The browser window is at least 1280px wide, or zoomed to 90%, so the risk map and the findings table have room.
 - [ ] Run one case and approve it, typing your name as **Revisor** so it's pre-filled. Then click **Restablecer** and **Restablecer** again in the dialog.
-- [ ] Quick rehearsal of Marta (below), then **Restablecer** again.
+- [ ] Quick rehearsal of Patricia (below), then **Restablecer** again.
 - [ ] Turn off notifications, close other tabs, and set the font size so the back row can read it.
 
 ## The script
@@ -22,23 +22,23 @@ Do these 15 minutes before, on the machine you present from.
 | Time | What you click | What you say |
 |---|---|---|
 | **0:00** | Nothing. Show the **Mapa de riesgo**. | «Toda empresa reparte cientos de llaves: cuentas, grupos de administración, VPN, dispositivos. Nadie controla quién sigue teniendo cuáles. AccessHound lo pone todo en un mismo mapa, unas reglas señalan lo que no encaja y un agente de IA lo investiga para que una persona decida.» |
-| **0:25** | Point at the map, then at **Javier Ortega (98%)**. | «Cada círculo es una persona o cuenta de Brisa Networks, con su riesgo. Media del 41 %, y alguien al 98 %.» |
-| **0:40** | **Hallazgos**, then **Empezar análisis**, then **Investigar todos (6)**. | «Las reglas han encontrado seis problemas. Lanzo el agente sobre los seis a la vez: cuatro en paralelo, el resto en cola.» |
-| **0:55** | Open **Marta Ruiz**'s row. Point at the red paths in **Mapa de accesos**. | «Marta pasó de Finanzas a Marketing en marzo. En rojo, lo que ha señalado la regla: sigue teniendo Jira y Azure de Finanzas.» Read one of the agent's notes aloud as it appears. |
-| **1:20** | Point at the proposal card. | «Recomienda **revocar**. Fijaos en las pruebas: su ticket de Azure se aprobó para un puesto de Controller cloud que ya no tiene, y ninguno de sus compañeros de Marketing tiene ese acceso.» |
-| **1:40** | Click **Aprobar y revocar**. Point at the map. | «Decide una persona, no la IA. Al aprobar, el cambio se aplica: esos caminos quedan revocados. Su acceso de Marketing se mantiene.» |
-| **2:00** | Open **Javier Ortega**'s row. | «Javier se fue a la competencia en septiembre. Aquí no basta con limpiar: su móvil de trabajo y el Descodificador DEMO se usaron en la sede de Madrid a las 22:41 y 22:47 del 14 de noviembre, de noche.» |
-| **2:25** | Point at **Escalar**, then click **Aprobar y escalar**. | «Propone **escalar**: desactivar cuenta y dispositivos y abrir un incidente. Aprobado, y queda registrado.» |
-| **2:45** | Open **Elena Navarro**'s row. | «Elena es la única ingeniera con un Descodificador DEMO. Una herramienta ingenua diría “revocar”.» |
-| **3:05** | Point at **Mantener**, then click **Aprobar: mantener el acceso**. | «El agente ha encontrado un ticket aprobado por el CISO para la guardia de dispositivos DEMO, vigente hasta marzo de 2027. Recomienda **mantener**: comprueba antes de acusar. No cambia nada, pero queda registrado.» |
+| **0:25** | Point at the map, then at **Carlos Nieto (98%)**. | «Cada círculo es una persona o cuenta de FCYBERL, con su riesgo. Media del 12 %, y alguien al 98 %.» |
+| **0:40** | **Hallazgos**, then **Empezar análisis**, then **Investigar todos (4)**. | «Las reglas han encontrado cuatro problemas. Lanzo el agente sobre los cuatro a la vez.» |
+| **0:55** | Open **Patricia Román Castro**'s row. Point at the red paths in **Mapa de accesos**. | «Patricia pasó de Marketing a Diseño en marzo. En rojo, lo que ha señalado la regla: sigue teniendo VPN DEMO y Firebase de Marketing.» Read one of the agent's notes aloud as it appears. |
+| **1:20** | Point at the proposal card. | «Recomienda **revocar**. Fijaos en las pruebas: su ticket de Firebase se aprobó para analítica de campañas en Marketing, un puesto que ya no tiene, y nadie en Diseño tiene ese acceso.» |
+| **1:40** | Click **Aprobar y revocar**. Point at the map. | «Decide una persona, no la IA. Al aprobar, el cambio se aplica: esos caminos quedan revocados. Su acceso general se mantiene.» |
+| **2:00** | Open **Carlos Nieto**'s row. | «El móvil de trabajo de Carlos se registró en la sede de Madrid a las 09:12 y, 19 minutos después, hubo un inicio de sesión en la VPN desde Lagos. Una persona no puede estar en los dos sitios.» |
+| **2:25** | Point at **Escalar**, then click **Aprobar y escalar**. | «Propone **escalar**: restablecer las credenciales de la VPN y abrir un incidente. Aprobado, y queda registrado.» |
+| **2:45** | Open **Marcos Barba Ballarín**'s row. | «Marcos es la única persona de IA con un Descodificador DEMO. Una herramienta ingenua diría “revocar”.» |
+| **3:05** | Point at **Mantener**, then click **Aprobar: mantener el acceso**. | «El agente ha encontrado un ticket aprobado por el CISO para las pruebas de modelos sobre dispositivos DEMO, vigente hasta marzo de 2027. Recomienda **mantener**: comprueba antes de acusar. No cambia nada, pero queda registrado.» |
 | **3:30** | **Auditoría**, then **Descargar CSV**. | «Cada decisión: qué propuso el agente, quién lo aprobó y qué cambió realmente. Es la evidencia que pide una auditoría de NIS2, y aquí está como archivo para entregar.» |
-| **3:55** | **Hallazgos**. Point at the three you didn't open. | «También ha encontrado una cuenta de copias de seguridad con permisos de administrador cuyo responsable se fue, una analista con Firebase y un Azure temporal que caducó hace un año, y un acceso a la VPN desde Lagos 19 minutos después de que su móvil se registrara en Madrid.» |
-| **4:20** | **Mapa de riesgo**. Point at Javier, Marta and Elena. | «Y el mapa se ha calmado: Javier ha bajado del 98 % al 12 %, Marta del 81 % al 13 %, y Elena del 69 % al 40 %, porque su acceso ya está revisado y justificado.» |
+| **3:55** | **Hallazgos**. Point at the one you didn't open. | «También ha encontrado a Daniel Nieto con Firebase y un Azure temporal que caducó hace más de un año: una combinación que rompe la segregación de funciones.» |
+| **4:20** | **Mapa de riesgo**. Point at Carlos, Patricia and Marcos. | «Y el mapa se ha calmado: Carlos, Patricia y Marcos han bajado, porque su acceso ya está revisado y justificado.» |
 | **4:45** | Nothing. | «Las reglas deciden qué no encaja, así que no se escapa nada. La IA investiga y explica. Y siempre decide una persona.» |
 
-**Short on time?** Drop Javier: Marta, then Elena, then the audit trail and the risk map still tell the whole story.
+**Short on time?** Drop Carlos: Patricia, then Marcos, then the audit trail and the risk map still tell the whole story.
 
-**Why "Investigar todos" at the start:** by the time you finish with Marta, the other five are ready, so you never wait on the agent. If you'd rather show one investigation from the beginning, open Marta's row and click **Investigar** instead, then use **Investigar todos** after her.
+**Why "Investigar todos" at the start:** by the time you finish with Patricia, the other three are ready, so you never wait on the agent. If you'd rather show one investigation from the beginning, open Patricia's row and click **Investigar** instead, then use **Investigar todos** after her.
 
 ## If something goes wrong
 
@@ -55,6 +55,6 @@ Do these 15 minutes before, on the machine you present from.
 
 - **«¿Y si la IA se equivoca?»** No puede cambiar nada: sus herramientas solo leen. Todo cambio necesita la aprobación de una persona, y las pruebas que cita están en la tarjeta para comprobarlas.
 - **«¿Cómo sabéis que no se os escapa nada?»** La detección no es IA. Reglas fijas señalan los hallazgos; el agente solo investiga lo que señalan.
-- **«¿De dónde salen los datos?»** En esta demo, de una empresa generada. En producción: RR. HH., grupos del directorio, cuentas SaaS y registros de dispositivos, unidos en un solo grafo.
+- **«¿De dónde salen los datos?»** En esta demo, de datos generados con el equipo de FCYBERL: los roles y los incidentes son inventados. En producción: RR. HH., grupos del directorio, cuentas SaaS y registros de dispositivos, unidos en un solo grafo.
 - **«¿Cuánto cuesta?»** Unos 6 céntimos por investigación con Claude Opus 5.5, y entre 7 y 17 segundos.
-- **«¿Por qué no quitar sin más todo acceso inusual?»** Elena: inusual no es lo mismo que indebido. El agente busca el motivo antes de recomendar nada.
+- **«¿Por qué no quitar sin más todo acceso inusual?»** Marcos: inusual no es lo mismo que indebido. El agente busca el motivo antes de recomendar nada.

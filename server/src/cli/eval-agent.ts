@@ -14,7 +14,7 @@ import { detect, type FindingType } from "../detectors/index.js";
 const expected: Record<FindingType, { decision: Proposal["decision"]; check: (p: Proposal) => string[] }> = {
   role_change_leftover: {
     decision: "revoke",
-    check: (p) => requireGroups(p, ["g-fin-cloud", "g-fin-staff"]),
+    check: (p) => requireGroups(p, ["g-mkt-firebase", "g-mkt-staff"]),
   },
   leaver_access: {
     decision: "escalate",
@@ -28,7 +28,7 @@ const expected: Record<FindingType, { decision: Proposal["decision"]; check: (p:
     decision: "revoke",
     // Removing either duty breaks the combination.
     check: (p) =>
-      p.actions.some((a) => a.kind === "remove_from_group" && ["g-fin-cloud", "g-fin-firebase"].includes(a.target))
+      p.actions.some((a) => a.kind === "remove_from_group" && ["g-eng-cloud", "g-eng-staff"].includes(a.target))
         ? []
         : ["doesn't remove either conflicting group"],
   },
