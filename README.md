@@ -49,7 +49,7 @@ There is also a sixth, decoy case: Elena, an engineer, has server-room access th
 
 ## Architecture
 
-TypeScript throughout. The UI will be React built on [Mística](https://github.com/telefonica/mistica-web), so one language covers everything.
+TypeScript throughout. The UI is React built on [Mística](https://github.com/telefonica/mistica-web) with the Telefónica skin, so one language covers everything.
 
 ```
 server/src/
@@ -64,7 +64,20 @@ server/src/
     live.ts         Claude agent (SDK tool runner); finishes by calling submit_proposal
     replay.ts       scripted agent that calls the same tools on the same data — no API key needed
   store.ts          in-memory state; applies approved actions; writes the audit trail (data/audit.jsonl)
-  index.ts          Express API
+  index.ts          Express API; also serves web/dist when it has been built
+
+web/src/
+  App.tsx           app shell and state: findings, agent traces, decisions, reset
+  api.ts            typed API client; investigate() reads the agent's SSE stream
+  present.tsx       labels, icons and colours for findings, statuses and decisions
+  components/
+    FindingsList    findings by priority: needs a decision, then open, then decided
+    FindingDetail   rule facts, access map, agent investigation and proposal for one finding
+    AccessGraph     person → groups → entitlements in three columns; flagged paths in red,
+                    revoked paths dashed after approval; stacks vertically on mobile
+    AgentTrace      the agent's steps as they stream in: why, which lookup, what came back
+    ProposalCard    the recommendation, evidence and planned changes; approve or reject
+    AuditTrail      every decision and what it changed
 ```
 
 - **Detection is deterministic and investigation is AI.** The rules decide what looks wrong, so a planted case is never missed. The agent verifies each finding, explains it and proposes `revoke`, `keep` or `escalate`.
@@ -80,7 +93,12 @@ npm install
 ```
 
 ```bash
-npm run dev          # API on http://localhost:8787 (auto-reloads)
+npm run dev          # API on :8787 and UI on http://localhost:5173, both auto-reload
+```
+
+```bash
+npm run build        # build the UI into web/dist
+npm start            # then the API serves the UI too, on http://localhost:8787
 ```
 
 ```bash
@@ -104,5 +122,5 @@ Set `ANTHROPIC_API_KEY` to use the live agent. Without it, everything runs in re
 ## Status
 
 - [x] Demo data, detectors, agent (live and replay), API, audit trail
-- [ ] UI: findings list, access graph, live agent trace, approve/reject, audit trail
+- [x] UI: findings list, access graph, live agent trace, approve/reject, audit trail
 - [ ] Try the live agent with a real API key
