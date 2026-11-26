@@ -135,6 +135,7 @@ export const api = {
   findings: () => request<Finding[]>("/api/findings"),
   principal: (id: string) => request<PrincipalDetail>(`/api/principals/${encodeURIComponent(id)}`),
   audit: () => request<AuditEntry[]>("/api/audit"),
+  auditExportUrl: (format: "csv" | "json") => `/api/audit/export?format=${format}`,
   reset: () => post<{ ok: true }>("/api/reset"),
   decide: (findingId: string, decision: "approved" | "rejected", reviewer: string, note?: string) =>
     post<AuditEntry>(`/api/findings/${encodeURIComponent(findingId)}/decision`, { decision, reviewer, note }),

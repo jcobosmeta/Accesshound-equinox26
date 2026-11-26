@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { investigateLive } from "./agent/live.js";
 import { investigateReplay } from "./agent/replay.js";
 import type { AgentEvent, Proposal } from "./agent/types.js";
+import { auditCsv, auditFileName, auditJson } from "./audit-export.js";
 import { store } from "./store.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -90,7 +91,8 @@ app.get("/api/findings/:id/investigate", async (req, res) => {
 
 app.post("/api/findings/:id/decision", (req, res) => {
   const { decision, reviewer, note } = req.body ?? {};
-  if (decision !== "approved" && decision !== "rejected") return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+  if (decision !== "approved" && decision !== "rejected")
+    return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
   try {
     res.json(store.decide(req.params.id, decision, typeof reviewer === "string" && reviewer ? reviewer : "Reviewer", note));
   } catch (err) {
@@ -100,6 +102,14 @@ app.post("/api/findings/:id/decision", (req, res) => {
 
 app.get("/api/audit", (_req, res) => {
   res.json(store.audit);
+});
+
+/** The audit trail as a download: ?format=csv (default) or json. */
+app.get("/api/audit/export", (req, res) => {
+  const format = req.query.format === "json" ? "json" : "csv";
+  res.setHeader("Content-Disposition", `attachment; filename="${auditFileName(format)}"`);
+  if (format === "json") res.type("application/json").send(auditJson(store.audit, store.company.name));
+  else res.type("text/csv; charset=utf-8").send(auditCsv(store.audit));
 });
 
 app.post("/api/reset", (_req, res) => {
