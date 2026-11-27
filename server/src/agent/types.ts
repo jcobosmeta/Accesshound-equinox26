@@ -6,13 +6,13 @@ export const ProposalSchema = z.object({
     .describe("revoke = remove the access; keep = access is justified; escalate = possible security incident, hand to the security team"),
   headline: z
     .string()
-    .describe("One sentence of at most 25 words a manager understands, e.g. 'Marta pasó a Marketing en marzo y sigue teniendo acceso a Azure de Finanzas.'"),
+    .describe("One sentence of at most 25 words a manager understands, e.g. 'Patricia pasó a Diseño en marzo y sigue teniendo acceso a Firebase de Marketing.'"),
   explanation: z
     .string()
     .describe("At most four short sentences in plain language: what you found, why it matters, why you recommend this decision."),
   evidence: z
     .array(z.string())
-    .describe("Concrete facts you verified with tools, one per item, with names and ids, e.g. 'RR. HH.: traslado Finanzas → Marketing el 2 mar 2026'."),
+    .describe("Concrete facts you verified with tools, one per item, with names and ids, e.g. 'RR. HH.: traslado Marketing → Diseño el 2 mar 2026'."),
   actions: z
     .array(
       z.object({

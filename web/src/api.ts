@@ -20,6 +20,7 @@ export interface GraphNode {
   id: string;
   kind: "org" | "person" | "service";
   name: string;
+  avatarUrl?: string;
   subtitle: string;
   department: string;
   status: "active" | "left" | "service" | "org";
@@ -133,6 +134,7 @@ export interface Person {
   startDate: string;
   endDate?: string;
   homeOffice: string;
+  avatarUrl?: string;
 }
 
 export interface ServiceAccount {

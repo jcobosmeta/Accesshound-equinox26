@@ -41,7 +41,10 @@ export const scorePalette: Record<RiskLevel, { stroke: string; bg: string; borde
 
 /** Dark-mode accent per department so map quadrants and hierarchy columns stay scannable. */
 export const departmentAccent: Record<string, { bg: string; border: string; text: string }> = {
-  Finanzas: { bg: "#10213D", border: "#1D4ED8", text: "#60A5FA" },
+  Innovación: { bg: "#10213D", border: "#1D4ED8", text: "#60A5FA" },
+  Diseño: { bg: "#1F1A33", border: "#7C3AED", text: "#C4B5FD" },
+  IA: { bg: "#22150A", border: "#C2410C", text: "#FB923C" },
+  Transversal: { bg: "#162033", border: "#475569", text: "#CBD5E1" },
   Marketing: { bg: "#2E1226", border: "#BE185D", text: "#F472B6" },
   TI: { bg: "#1E1638", border: "#6D28D9", text: "#A78BFA" },
   Ingeniería: { bg: "#0D2632", border: "#0E7490", text: "#22D3EE" },

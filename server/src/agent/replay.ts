@@ -58,12 +58,12 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       return {
         decision: "revoke",
         headline: `${first} pasó a ${transfer.toDepartment} el ${transfer.date} y aún tiene acceso a ${sensitive.entitlement.name} de ${transfer.fromDepartment}.`,
-        explanation: `${name} era Controller cloud en ${transfer.fromDepartment} y se trasladó a ${transfer.toDepartment} como ${repo.person(pid)!.title}. Nunca se le quitaron los grupos de ${transfer.fromDepartment}, así que ${first} sigue teniendo acceso a ${sensitive.entitlement.name} y a Jira de Finanzas. Nadie del equipo de ${transfer.toDepartment} tiene ${sensitive.entitlement.name}, y el ticket original solo cubría el antiguo puesto en Finanzas. Quitar esos grupos cierra el hueco sin tocar el acceso de ${first} a la VPN DEMO de Marketing.`,
+        explanation: `${name} trabajaba en ${transfer.fromDepartment} y se trasladó a ${transfer.toDepartment} con el puesto de ${repo.person(pid)!.title}. Nunca se le quitaron los grupos de ${transfer.fromDepartment}, así que ${first} sigue en ${leftover.map((g) => repo.group(g)!.name).join(" y ")}, con acceso a ${sensitive.entitlement.name}. Nadie del equipo de ${transfer.toDepartment} lo tiene, y el ticket original solo cubría el antiguo puesto en ${transfer.fromDepartment}. Quitar esos grupos cierra el hueco sin tocar el resto del acceso de ${first}.`,
         evidence: [
           `RR. HH.: traslado ${transfer.fromDepartment} → ${transfer.toDepartment} el ${transfer.date}.`,
           `Sigue en ${leftover.map((g) => repo.group(g)!.name).join(" y ")}.`,
           `0 de ${repo.activePeers(repo.person(pid)!).length} compañeros de ${transfer.toDepartment} tienen ${sensitive.entitlement.name}.`,
-          `El ticket TCK-2021-0007 concedió ${sensitive.entitlement.name} para el puesto de Controller cloud, que ${first} ya no ocupa.`,
+          `El ticket ${repo.ticketsFor(pid, sensitive.entitlement.id)[0]?.id} concedió ${sensitive.entitlement.name} para el puesto anterior de ${first} en ${transfer.fromDepartment}.`,
         ],
         actions: leftover.map((g) => ({ kind: "remove_from_group" as const, target: g, reason: `Pertenece al puesto anterior de ${first} en ${transfer.fromDepartment}.` })),
         confidence: "high",
@@ -127,19 +127,21 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       await run([
         { say: `Compruebo cómo consiguió ${first} acceso a Firebase y a Azure a la vez.`, call: ["list_access", { principal_id: pid }] },
         { say: "¿Hay un ticket válido para el acceso a Azure?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: "ent-azure" }] },
-        { say: "¿Quién más en Finanzas tiene acceso a Azure?", call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-azure" }] },
+        { say: `¿Quién más en ${repo.person(pid)!.department} tiene acceso a Azure?`, call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-azure" }] },
       ]);
       const ticket = repo.ticketsFor(pid, "ent-azure")[0];
+      const azureGroup = repo.group(ticket ? repo.membershipsOf(pid).find((m) => m.ticketId === ticket.id)!.groupId : "")!;
+      const firebaseGroup = access.find((a) => a.entitlement.id === "ent-firebase")!.group;
       return {
         decision: "revoke",
         headline: `${first} tiene acceso de administración a Firebase y a Azure: la cobertura temporal caducó el ${ticket?.expiresDate}.`,
-        explanation: `${name} es analista de facturación y usa Firebase en su trabajo. El acceso a Azure se añadió el ${ticket?.approvedDate} para cubrir la baja de una compañera y debía terminar el ${ticket?.expiresDate}, pero nunca se revocó. Tener Firebase y Azure a la vez incumple la segregación de funciones. Quita Azure de Finanzas y mantén el acceso habitual de ${first} a Firebase.`,
+        explanation: `${name} trabaja en ${repo.person(pid)!.department} (${repo.person(pid)!.title.toLowerCase()}) y usa Firebase en su trabajo. El acceso a Azure se añadió el ${ticket?.approvedDate} para cubrir una ausencia en el equipo y debía terminar el ${ticket?.expiresDate}, pero nunca se revocó. Tener Firebase y Azure a la vez incumple la segregación de funciones. Quita ${azureGroup.name} y mantén el acceso habitual de ${first} a Firebase.`,
         evidence: [
-          "Firebase a través de Firebase de Finanzas (normal para su puesto).",
-          `Azure a través de Azure de Finanzas desde el ${ticket?.approvedDate}.`,
+          `Firebase a través de ${firebaseGroup.name} (normal para su puesto).`,
+          `Azure a través de ${azureGroup.name} desde el ${ticket?.approvedDate}.`,
           `Ticket ${ticket?.id}: «${ticket?.justification}». Caducó el ${ticket?.expiresDate}.`,
         ],
-        actions: [{ kind: "remove_from_group", target: "g-fin-cloud", reason: "La cobertura temporal de Azure ha caducado; incumple la segregación de funciones con Firebase." }],
+        actions: [{ kind: "remove_from_group", target: azureGroup.id, reason: "La cobertura temporal de Azure ha caducado; incumple la segregación de funciones con Firebase." }],
         confidence: "high",
       };
     }
@@ -169,7 +171,7 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
     case "peer_outlier": {
       const ent = f.entitlementIds[0]!;
       await run([
-        { say: `${first} tiene un acceso que no tiene ningún compañero de Ingeniería. Compruebo por qué.`, call: ["list_access", { principal_id: pid }] },
+        { say: `${first} tiene un acceso que no tiene ningún compañero de ${repo.person(pid)!.department}. Compruebo por qué.`, call: ["list_access", { principal_id: pid }] },
         { call: ["compare_with_peers", { person_id: pid, entitlement_id: ent }] },
         { say: "¿Hay un ticket aprobado?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: ent }] },
         { say: "¿Se ha usado de verdad el Descodificador últimamente?", call: ["get_badge_events", { person_id: pid, since: "2026-11-01" }] },
@@ -181,7 +183,7 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
         return {
           decision: "keep",
           headline: `El acceso de ${first} a ${e.name} es poco habitual en ${repo.person(pid)!.department}, pero está aprobado hasta el ${t.expiresDate}.`,
-          explanation: `Ningún compañero de Ingeniería de ${first} tiene ${e.name}, y por eso se ha señalado. Sin embargo, el ticket ${t.id} muestra que lo pidió ${repo.principalName(t.requestedBy)} y lo aprobó ${t.approvedBy} por este motivo: «${t.justification}» La aprobación es válida hasta el ${t.expiresDate} y el uso reciente durante las guardias encaja con el turno. Mantenlo y revísalo cuando caduque el ticket.`,
+          explanation: `Ningún compañero de ${repo.person(pid)!.department} de ${first} tiene ${e.name}, y por eso se ha señalado. Sin embargo, el ticket ${t.id} muestra que lo pidió ${repo.principalName(t.requestedBy)} y lo aprobó ${t.approvedBy} por este motivo: «${t.justification}» La aprobación es válida hasta el ${t.expiresDate} y el uso reciente encaja con esa justificación. Mantenlo y revísalo cuando caduque el ticket.`,
           evidence: [`Ticket ${t.id}: aprobado por ${t.approvedBy} el ${t.approvedDate}, caduca el ${t.expiresDate}.`, `Justificación: ${t.justification}`],
           actions: [],
           confidence: "high",
