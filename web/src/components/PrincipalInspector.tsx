@@ -72,7 +72,7 @@ function LargeRiskRing({ score, level }: { score: number; level: RiskLevel }) {
           y={40}
           textAnchor="middle"
           fontSize={16}
-          fontWeight={800}
+          fontWeight={700}
           fill={pal.stroke}
           style={{ fontVariantNumeric: "tabular-nums" }}
         >

@@ -1,0 +1,48 @@
+/*
+ * Telefónica Sans — the designated font of Mistica's Telefónica skin (getTelefonicaSkin()).
+ * Mistica's text components only use these four weights: 300 light, 400 regular, 500 medium, 700 bold.
+ * Files are served from web/public/fonts.
+ */
+@font-face {
+  font-family: 'Telefonica Sans';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/Telefonica_Sans_Light.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Telefonica Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Telefonica_Sans_Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Telefonica Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Telefonica_Sans_Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Telefonica Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Telefonica_Sans_Bold.woff2') format('woff2');
+}
+
+/* Respect the user's browser/OS font-size setting; Mistica sizes are rem-based. */
+html {
+  font-size: 100%;
+}
+
+/* Browsers give form controls and code their own font; make them follow the body font. */
+input,
+textarea,
+select,
+button,
+pre,
+code {
+  font: inherit;
+}
