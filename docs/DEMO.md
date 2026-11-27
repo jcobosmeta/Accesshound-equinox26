@@ -22,7 +22,7 @@ Do these 15 minutes before, on the machine you present from.
 | Time | What you click | What you say |
 |---|---|---|
 | **0:00** | Nothing. Show the **Mapa de riesgo**. | «Toda empresa reparte cientos de llaves: cuentas, grupos de administración, VPN, dispositivos. Nadie controla quién sigue teniendo cuáles. Mi Portero lo pone todo en un mismo mapa, unas reglas señalan lo que no encaja y un agente de IA lo investiga para que una persona decida.» |
-| **0:25** | Point at the map, then at **Carlos Nieto (98%)**. | «Cada círculo es una persona o cuenta de FCYBERL, con su riesgo. Media del 12 %, y alguien al 98 %.» |
+| **0:25** | Point at the map, then at **Carlos Nieto (80%)**. | «Cada círculo es una persona o cuenta de FCYBERL, con su riesgo. Media del 12 %, y alguien al 80 %.» |
 | **0:40** | **Hallazgos**, then **Empezar análisis**, then **Investigar todos (3)**. | «Las reglas han encontrado tres problemas. Lanzo el agente sobre los tres a la vez.» |
 | **0:55** | Open **Patricia Román Castro**'s row. Point at the red paths in **Mapa de accesos**. | «Patricia pasó de Marketing a Diseño en marzo. En rojo, lo que ha señalado la regla: sigue teniendo VPN DEMO y Firebase de Marketing.» Read one of the agent's notes aloud as it appears. |
 | **1:20** | Point at the proposal card. | «Recomienda **revocar**. Fijaos en las pruebas: su ticket de Firebase se aprobó para analítica de campañas en Marketing, un puesto que ya no tiene, y nadie en Diseño tiene ese acceso.» |
