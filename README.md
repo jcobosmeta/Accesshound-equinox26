@@ -1,5 +1,7 @@
 # Mi Portero
 
+<img src="web/public/logo.svg" alt="Mi Portero logo" width="96" />
+
 > BloodHound-style risk analysis for physical and digital access. Maps who can reach what, and an AI agent explains each risk so humans can review and revoke it.
 
 Every company hands out hundreds of keys: app accounts, admin groups, VPN access, badges that open doors. Nobody keeps track of who still has which ones. People change roles and keep their old access, leavers' badges still open the server room, and service accounts outlive their owners.
@@ -71,11 +73,12 @@ server/src/
   index.ts          Express API; also serves web/dist when it has been built
 
 web/src/
-  App.tsx           app shell and state: three views (risk map, findings, audit), agent traces, decisions, reset;
-                    investigations are queued, 4 at a time
+  App.tsx           app shell and state: the audit views (risk map, findings, audit) and the live monitor,
+                    agent traces, decisions, reset; investigations are queued, 4 at a time
   api.ts            typed API client; investigate() reads the agent's SSE stream
   present.tsx       labels, icons and colours for findings, statuses and decisions
   usePrincipal.ts   loads a person's access and remembers what was revoked
+  ../public/        logo.svg (header logo and favicon), fonts and icons
   components/
     OrgRiskGraph    the whole organisation as a graph, coloured by risk; click someone to inspect them
     PrincipalInspector  one person's access map, findings and investigations, opened from the risk map
