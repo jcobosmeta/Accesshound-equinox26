@@ -121,7 +121,7 @@ export const ALERT_TEMPLATES: Record<AlertKind, AlertTemplate> = {
     title: "Viaje imposible",
     people: true,
     services: false,
-    detail: () => `Inicio de sesión VPN desde ${pick(["Lagos (Nigeria)", "Bucarest (Rumanía)", "Hanói (Vietnam)", "Caracas (Venezuela)"])} 35 min después de un acceso desde Madrid. IP ${ip()}.`,
+    detail: () => `Inicio de sesión VPN desde ${pick(["Kuala Lumpur (Malasia)", "Bucarest (Rumanía)", "Hanói (Vietnam)", "Caracas (Venezuela)"])} 35 min después de un acceso desde Madrid. IP ${ip()}.`,
   },
   mass_download: {
     source: "DLP",

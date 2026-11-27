@@ -11,7 +11,7 @@
 //
 // Three planted cases (all fictional; titles are deliberately gender-neutral):
 //   1. Patricia Román    — moved Marketing → Diseño in March, still holds Marketing Firebase & VPN DEMO access
-//   2. Carlos Nieto      — Móvil Trabajo check-in in Madrid while VPN General logs in from Lagos, 19 minutes apart (8 Sep)
+//   2. Carlos Nieto      — Móvil Trabajo check-in in Madrid while VPN General logs in from Kuala Lumpur, 19 minutes apart (8 Sep)
 //   3. Marcos Barba      — DECOY: Descodificador access none of the IA peers have, backed by a
 //                          valid CISO-approved ticket. The agent should propose KEEP.
 //
@@ -231,11 +231,11 @@ for (const p of people.filter((x) => x.status === "active")) {
 badgeEvents.push({ personId: "p-050", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-19T11:05:00+01:00", ...MADRID, result: "granted" });
 badgeEvents.push({ personId: "p-020", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-21T03:12:00+01:00", ...MADRID, result: "granted" });
 
-// Case 2 — Carlos Nieto: Móvil Trabajo check-in in Madrid at 09:12, VPN General login from Lagos at 09:31.
+// Case 2 — Carlos Nieto: Móvil Trabajo check-in in Madrid at 09:12, VPN General login from Kuala Lumpur at 09:31.
 // Eleven weeks before the snapshot, on purpose: the audit uncovers something nobody noticed at the time,
 // rather than something so recent it looks like we just missed it.
 badgeEvents.push({ personId: "p-060", doorEntitlementId: "ent-movil-trabajo", time: "2026-09-08T09:12:00+02:00", ...MADRID, result: "granted" });
-loginEvents.push({ principalId: "p-060", system: "VPN General", time: "2026-09-08T09:31:00+02:00", city: "Lagos", country: "Nigeria", ip: "102.89.34.120" });
+loginEvents.push({ principalId: "p-060", system: "VPN General", time: "2026-09-08T09:31:00+02:00", city: "Kuala Lumpur", country: "Malasia", ip: "175.139.204.17" });
 
 export const company: Company = {
   name: "FCYBERL",
