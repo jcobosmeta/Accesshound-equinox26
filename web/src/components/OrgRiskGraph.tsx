@@ -430,7 +430,7 @@ function NodeRiskRing({ cx, cy, r, score, stroke }: { cx: number; cy: number; r:
         y={cy + 3.8}
         textAnchor="middle"
         fontSize={10.5}
-        fontWeight={800}
+        fontWeight={700}
         fill={stroke}
         style={{ fontVariantNumeric: "tabular-nums" }}
       >
@@ -760,7 +760,7 @@ export function OrgRiskGraph({
                         stroke={acc.border}
                         strokeWidth={1}
                       />
-                      <text x={bx + 12} y={sec.y + 2} fontSize={11.5} fontWeight={800} fill={acc.text} letterSpacing="0.06em">
+                      <text x={bx + 12} y={sec.y + 2} fontSize={11.5} fontWeight={700} fill={acc.text} letterSpacing="0.06em">
                         {sec.dept.toUpperCase()}
                       </text>
                       <text
@@ -855,7 +855,7 @@ export function OrgRiskGraph({
                           stroke={vis.stroke}
                           strokeWidth={1.3}
                         />
-                        <text x={geom.mx} y={geom.my + 3.5} textAnchor="middle" fontSize={10.5} fontWeight={600} fill="#F8FAFC">
+                        <text x={geom.mx} y={geom.my + 3.5} textAnchor="middle" fontSize={10.5} fontWeight={500} fill="#F8FAFC">
                           {truncate(edge.label, 32)}
                         </text>
                       </g>
@@ -910,13 +910,13 @@ export function OrgRiskGraph({
                           strokeWidth={2}
                           filter="url(#ah-shadow)"
                         />
-                        <text x={pos.cx} y={pos.cy - 12} textAnchor="middle" fontSize={12.5} fontWeight={800} fill="#F8FAFC">
+                        <text x={pos.cx} y={pos.cy - 12} textAnchor="middle" fontSize={12.5} fontWeight={700} fill="#F8FAFC">
                           {node.name}
                         </text>
                         <text x={pos.cx} y={pos.cy + 5} textAnchor="middle" fontSize={10} fill="#94A3B8">
                           Riesgo medio
                         </text>
-                        <text x={pos.cx} y={pos.cy + 27} textAnchor="middle" fontSize={18} fontWeight={800} fill={pal.stroke}>
+                        <text x={pos.cx} y={pos.cy + 27} textAnchor="middle" fontSize={18} fontWeight={700} fill={pal.stroke}>
                           {node.riskScore}%
                         </text>
                       </g>
@@ -942,7 +942,7 @@ export function OrgRiskGraph({
                         filter="url(#ah-shadow)"
                       />
                       <circle cx={pos.x + 32} cy={pos.cy} r={19} fill="#172554" stroke="#3B82F6" strokeWidth={1.2} />
-                      <text x={pos.x + 32} y={pos.cy + 4.5} textAnchor="middle" fontSize={12} fontWeight={800} fill="#60A5FA">
+                      <text x={pos.x + 32} y={pos.cy + 4.5} textAnchor="middle" fontSize={12} fontWeight={700} fill="#60A5FA">
                         BN
                       </text>
                       <text x={pos.x + 62} y={pos.y + 28} fontSize={14.5} fontWeight={700} fill="#F8FAFC">
@@ -1016,7 +1016,7 @@ export function OrgRiskGraph({
                         y={pos.cy + 4.5}
                         textAnchor="middle"
                         fontSize={isSvc ? 10 : isHead ? 12.5 : 11.5}
-                        fontWeight={800}
+                        fontWeight={700}
                         fill={isSelected ? "#FFFFFF" : isActiveFlagged ? pal.text : deptAcc.text}
                       >
                         {isSvc ? "SVC" : initials(node.name)}
@@ -1042,7 +1042,7 @@ export function OrgRiskGraph({
                         x={pos.cx - labelW / 2 + 10}
                         y={pos.cy + ringR + 21.5}
                         fontSize={10.8}
-                        fontWeight={600}
+                        fontWeight={500}
                         fill={isSelected ? "#FFFFFF" : "#F1F5F9"}
                       >
                         {truncate(node.name, 16)}
@@ -1052,7 +1052,7 @@ export function OrgRiskGraph({
                         y={pos.cy + ringR + 21.5}
                         textAnchor="end"
                         fontSize={10.8}
-                        fontWeight={800}
+                        fontWeight={700}
                         fill={isSelected ? "#FFFFFF" : pal.stroke}
                         style={{ fontVariantNumeric: "tabular-nums" }}
                       >

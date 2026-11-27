@@ -174,7 +174,7 @@ function WatchRow({ w, onUnblock }: { w: WatchedPrincipal; onUnblock: () => void
           border: `1px solid ${p.border}`,
           color: p.text,
           fontSize: 12,
-          fontWeight: 600,
+          fontWeight: 500,
           display: "grid",
           placeItems: "center",
         }}
