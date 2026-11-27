@@ -117,7 +117,7 @@ const seeds: Seed[] = [
   { id: "p-050", gh: "sjaram93", name: "Sergio Jaramillo", department: "TI", title: "Administración de sistemas", managerId: "p-051", startDate: "2019-07-15" },
   { id: "p-051", name: "Maricruz", department: "TI", title: "Responsable de TI", startDate: "2021-03-08", avatarUrl: "/avatars/maricruz.jpg" },
   { id: "p-052", gh: "felipesotoca", name: "Felipe Sotoca Barroso", department: "Marketing", title: "Responsable de contenidos", managerId: "p-051", startDate: "2021-08-23" },
-  { id: "p-053", gh: "PatriRoman", name: "Patricia Román Castro", department: "Diseño", title: "Diseño de marca", managerId: "p-051", startDate: "2020-06-01" },
+  { id: "p-053", gh: "PatriRoman", name: "Patricia Román Castro", department: "Diseño", title: "Quality of Service", managerId: "p-051", startDate: "2020-06-01" },
   { id: "p-054", gh: "gonsalcedo", name: "Gonzalo Salcedo", department: "Diseño", title: "Diseño de producto", managerId: "p-051", startDate: "2023-02-13" },
 ];
 
@@ -175,7 +175,7 @@ grant("svc-ci-runner", "g-eng-staff", "2022-05-10");
 
 const hrEvents: HrEvent[] = [
   ...people.map((p) => ({ personId: p.id, date: p.startDate, type: "hire" as const, toDepartment: p.id === "p-053" ? ("Marketing" as const) : p.department })),
-  { personId: "p-053", date: "2026-03-02", type: "transfer", fromDepartment: "Marketing", toDepartment: "Diseño", note: "Cambio interno: Brand manager → Diseño de marca" },
+  { personId: "p-053", date: "2026-03-02", type: "transfer", fromDepartment: "Marketing", toDepartment: "Diseño", note: "Cambio interno: Brand manager → Quality of Service" },
 ];
 
 // ---------------------------------------------------------------- tickets
