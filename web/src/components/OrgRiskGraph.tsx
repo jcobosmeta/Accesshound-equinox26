@@ -679,11 +679,6 @@ export function OrgRiskGraph({
             </Inline>
 
             <Inline space={16} alignItems="center" wrap verticalSpace={8}>
-              {summary && (
-                <Text1 regular color="#94A3B8">
-                  {`${summary.company} · Media ${graph.avgRisk}% · Máximo ${graph.maxRisk}%`}
-                </Text1>
-              )}
               <Inline space={12} alignItems="center" wrap verticalSpace={4}>
                 <LegendDot color={scorePalette.critical.stroke} label="80–100%" />
                 <LegendDot color={scorePalette.high.stroke} label="60–79%" />
@@ -1182,24 +1177,6 @@ export function OrgRiskGraph({
             </div>
           );
         })()}
-
-        {/* Subtle bottom-right hint */}
-        <div
-          style={{
-            position: "absolute",
-            right: 14,
-            bottom: 12,
-            padding: "5px 12px",
-            borderRadius: 999,
-            background: "rgba(15, 23, 42, 0.88)",
-            border: "1px solid #263449",
-            pointerEvents: "none",
-          }}
-        >
-          <Text1 regular color="#94A3B8">
-            Arrastra para moverte · Ctrl/⌘ + rueda para hacer zoom · Haz clic en un usuario para ver su mapa de accesos y la investigación
-          </Text1>
-        </div>
       </div>
     </Boxed>
   );

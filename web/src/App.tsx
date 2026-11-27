@@ -1,26 +1,47 @@
 import {
   Box,
   ButtonSecondary,
+  Grid,
   Inline,
   MainNavigationBar,
   NavigationBarAction,
   NavigationBarActionGroup,
   ResponsiveLayout,
+  Row,
+  RowList,
   Stack,
+  Tag,
+  Text2,
   Text3,
+  TextLink,
   skinVars,
   useDialog,
   useScreenSize,
   useSnackbar,
 } from "@telefonica/mistica";
+import IconAlertRegular from "@telefonica/mistica-icons/icon-alert-regular";
+import IconBuildingTreeRegular from "@telefonica/mistica-icons/icon-building-tree-regular";
+import IconCheckRegular from "@telefonica/mistica-icons/icon-check-regular";
+import IconClipboardRegular from "@telefonica/mistica-icons/icon-clipboard-regular";
 import IconRefreshRegular from "@telefonica/mistica-icons/icon-refresh-regular";
 import IconShieldLockRegular from "@telefonica/mistica-icons/icon-shield-lock-regular";
 import * as React from "react";
-import { api, investigate, type AgentEvent, type AuditEntry, type Finding, type OrgGraph, type Summary } from "./api";
+import {
+  api,
+  investigate,
+  monitorStream,
+  type AgentEvent,
+  type AuditEntry,
+  type Finding,
+  type MonitorEvent,
+  type OrgGraph,
+  type Summary,
+} from "./api";
 import { AnalysesView, type Analysis } from "./components/AnalysesView";
 import { AuditTrail } from "./components/AuditTrail";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FindingDetail } from "./components/FindingDetail";
+import { MonitorView, type MonitorState } from "./components/MonitorView";
 import { OrgRiskGraph } from "./components/OrgRiskGraph";
 import { PrincipalInspector } from "./components/PrincipalInspector";
 import { SummaryBand } from "./components/SummaryBand";
@@ -56,9 +77,76 @@ const Brand = () => (
   </Inline>
 );
 
+type AuditView = 0 | 1 | 2;
+
+const AUDIT_VIEWS: { title: string; description: string; Icon: typeof IconAlertRegular }[] = [
+  { title: "Mapa de riesgo", description: "Riesgo por persona y departamento", Icon: IconBuildingTreeRegular },
+  { title: "Hallazgos", description: "Análisis, investigación del agente y decisiones", Icon: IconAlertRegular },
+  { title: "Registro", description: "Decisiones tomadas y cambios aplicados", Icon: IconClipboardRegular },
+];
+
+/** Menu under "Auditoría" in the navigation bar: the three audit views, side by side on desktop. */
+const AuditMenu = ({
+  current,
+  counts,
+  onSelect,
+}: {
+  current?: AuditView;
+  counts: (string | undefined)[];
+  onSelect: (view: AuditView) => void;
+}) => {
+  const { isTabletOrSmaller } = useScreenSize();
+  const rows = AUDIT_VIEWS.map(({ title, description, Icon }, i) => (
+    <Row
+      key={title}
+      asset={<Icon size={24} color={i === current ? skinVars.colors.brand : skinVars.colors.neutralHigh} />}
+      title={title}
+      description={description}
+      right={
+        i === current ? (
+          <IconCheckRegular size={20} color={skinVars.colors.brand} />
+        ) : counts[i] ? (
+          <Tag type="error">{counts[i]!}</Tag>
+        ) : undefined
+      }
+      onPress={() => onSelect(i as AuditView)}
+    />
+  ));
+  return isTabletOrSmaller ? (
+    <RowList>{rows}</RowList>
+  ) : (
+    <Grid columns={3} gap={24}>
+      {rows.map((row) => (
+        <RowList key={row.key}>{row}</RowList>
+      ))}
+    </Grid>
+  );
+};
+
+/** "Auditoría › <view>" above each audit view. */
+const AuditBreadcrumb = ({ view, onRoot }: { view: AuditView; onRoot: () => void }) => (
+  <Inline space={8} alignItems="center">
+    <Text2 regular>
+      <TextLink onPress={onRoot}>Auditoría</TextLink>
+    </Text2>
+    <Text2 regular color={skinVars.colors.textSecondary} aria-hidden>
+      ›
+    </Text2>
+    <Text2 medium as="h1">
+      {AUDIT_VIEWS[view].title}
+    </Text2>
+  </Inline>
+);
+
 export function App() {
-  // 0 = Organization Risk Graph (main screen), 1 = Findings queue, 2 = Audit trail
-  const [view, setView] = React.useState<0 | 1 | 2>(0);
+  // Top-level sections: 0 = Auditoría, 1 = Monitorización.
+  const [section, setSection] = React.useState<0 | 1>(0);
+  // Views inside Auditoría, picked from its dropdown: 0 = risk map, 1 = findings, 2 = audit trail.
+  const [view, setView] = React.useState<AuditView>(0);
+  const openAuditView = (v: AuditView) => {
+    setSection(0);
+    setView(v);
+  };
   const [summary, setSummary] = React.useState<Summary>();
   const [graph, setGraph] = React.useState<OrgGraph>();
   const [findings, setFindings] = React.useState<Finding[]>();
@@ -99,6 +187,34 @@ export function App() {
     api.summary().then(setSummary, () => {});
     refresh();
   }, [refresh]);
+
+  // The monitor runs on the server; this follows its live feed for the whole session, so blocks
+  // show up in the risk map and findings even while the Monitorización tab is closed.
+  const [monitor, setMonitor] = React.useState<MonitorState>({ events: [], blocked: [], iaAvailable: false, connected: false });
+  React.useEffect(
+    () =>
+      monitorStream(
+        (e) => {
+          if (e.type === "snapshot")
+            setMonitor((m) => ({ ...m, config: e.config, events: e.events, blocked: e.blocked, iaAvailable: e.iaAvailable }));
+          else if (e.type === "config") setMonitor((m) => ({ ...m, config: e.config }));
+          else if (e.type === "blocked") {
+            setMonitor((m) => ({ ...m, blocked: e.blocked }));
+            // A block or unblock changed someone's access.
+            setDataVersion((v) => v + 1);
+            refresh();
+          } else if (e.type === "event") {
+            const upsert = (list: MonitorEvent[]) =>
+              list.some((x) => x.alert.id === e.event.alert.id)
+                ? list.map((x) => (x.alert.id === e.event.alert.id ? e.event : x))
+                : [e.event, ...list].slice(0, 200);
+            setMonitor((m) => ({ ...m, events: upsert(m.events) }));
+          }
+        },
+        (connected) => setMonitor((m) => ({ ...m, connected }))
+      ),
+    [refresh]
+  );
 
   const openAnalysis = analyses.find((a) => a.id === openAnalysisId);
   const analysisFindings = React.useMemo(() => {
@@ -215,7 +331,7 @@ export function App() {
     confirm({
       title: "¿Restablecer la demo?",
       message:
-        "Se restauran los datos de acceso originales y se borran todas las propuestas, los análisis y el registro de auditoría.",
+        "Se restauran los datos de acceso originales y se borran todas las propuestas, los análisis, el registro de auditoría y los avisos y bloqueos de la monitorización.",
       acceptText: "Restablecer",
       cancelText: "Cancelar",
       destructive: true,
@@ -253,14 +369,35 @@ export function App() {
     <>
       <MainNavigationBar
         logo={<Brand />}
-        selectedIndex={view}
+        desktopLargeMenu
+        selectedIndex={section}
         sections={[
-          { title: "Mapa de riesgo", onPress: () => setView(0) },
           {
-            title: `Hallazgos${analyses.length && openFindingsCount ? ` (${openFindingsCount})` : ""}`,
-            onPress: () => setView(1),
+            title: "Auditoría",
+            onPress: () => setSection(0),
+            menu: {
+              content: ({ closeMenu }) => (
+                <AuditMenu
+                  current={section === 0 ? view : undefined}
+                  counts={[
+                    undefined,
+                    analyses.length && openFindingsCount ? `${openFindingsCount} abiertos` : undefined,
+                    undefined,
+                  ]}
+                  onSelect={(v) => {
+                    openAuditView(v);
+                    closeMenu();
+                  }}
+                />
+              ),
+            },
           },
-          { title: `Auditoría${audit.length ? ` (${audit.length})` : ""}`, onPress: () => setView(2) },
+          {
+            title: `Monitorización${
+              monitor.blocked.length ? ` (${monitor.blocked.length})` : monitor.config?.running ? " ●" : ""
+            }`,
+            onPress: () => setSection(1),
+          },
         ]}
         right={
           isTabletOrSmaller ? (
@@ -279,70 +416,107 @@ export function App() {
           )
         }
       />
-      {(view === 2 || (view === 1 && analyses.length > 0)) && <SummaryBand summary={summary} findings={findings} graph={graph} />}
-
-      {view === 0 ? (
-        <div style={{ maxWidth: 1520, margin: "0 auto", padding: isTabletOrSmaller ? "12px 12px 40px" : "16px 24px 48px" }}>
-          <Stack space={32}>
-            <div ref={graphSectionRef}>
-              <ErrorBoundary title="No se puede dibujar el mapa de riesgo de la organización">
-                <OrgRiskGraph
-                  graph={graph}
-                  summary={summary}
-                  findings={findings}
-                  selectedPrincipalId={selectedPrincipalId}
-                  onSelectPrincipal={handleSelectPrincipal}
-                  error={loadError}
-                  onRetry={refresh}
-                />
-              </ErrorBoundary>
-            </div>
-
-            {selectedPrincipalId && (
-              <div ref={inspectorRef} style={{ scrollMarginTop: 16 }}>
-                <ErrorBoundary key={selectedPrincipalId} title="No se pueden cargar los datos del usuario seleccionado">
-                  <PrincipalInspector
-                    principalId={selectedPrincipalId}
-                    findings={findings ?? []}
-                    traces={traces}
-                    audit={audit}
-                    dataVersion={dataVersion}
-                    onSelectPrincipal={handleSelectPrincipal}
-                    onClose={() => setSelectedPrincipalId(undefined)}
-                    onBackToGraph={scrollToGraph}
-                    onInvestigate={(findingId) => runAgent([findingId])}
-                    onDecide={decide}
-                  />
-                </ErrorBoundary>
-              </div>
-            )}
-          </Stack>
+      {section === 1 ? (
+        <div
+          style={{
+            maxWidth: 1520,
+            margin: "0 auto",
+            padding: isTabletOrSmaller ? "16px 12px 40px" : "24px 24px 48px",
+          }}
+        >
+          <ErrorBoundary title="No se puede mostrar la monitorización">
+            <MonitorView
+              state={monitor}
+              dataVersion={dataVersion}
+              onError={(message) => openSnackbar({ message, type: "CRITICAL" })}
+            />
+          </ErrorBoundary>
         </div>
       ) : (
-        <ResponsiveLayout>
-          <Box paddingY={24}>
-            {view === 2 ? (
-              <AuditTrail entries={audit} />
-            ) : (
-              <AnalysesView
-                analyses={analyses}
-                findings={findings}
-                audit={audit}
-                onStart={startAnalysis}
-                error={loadError}
-                onRetry={refresh}
-                openId={openAnalysisId}
-                onOpen={setOpenAnalysisId}
-                selectedFindingId={selectedFindingId}
-                onSelectFinding={setSelectedFindingId}
-                queued={queued}
-                traces={traces}
-                onInvestigateAll={investigateAll}
-                renderDetail={renderDetail}
-              />
-            )}
-          </Box>
-        </ResponsiveLayout>
+        <>
+          <div
+            style={{
+              maxWidth: 1520,
+              margin: "0 auto",
+              padding: isTabletOrSmaller ? "16px 12px" : "20px 24px 16px",
+            }}
+          >
+            <AuditBreadcrumb view={view} onRoot={() => setView(0)} />
+          </div>
+          {(view === 2 || (view === 1 && analyses.length > 0)) && (
+            <SummaryBand summary={summary} findings={findings} graph={graph} />
+          )}
+
+          {view === 0 ? (
+            <div
+              style={{
+                maxWidth: 1520,
+                margin: "0 auto",
+                padding: isTabletOrSmaller ? "0 12px 40px" : "0 24px 48px",
+              }}
+            >
+              <Stack space={32}>
+                <div ref={graphSectionRef}>
+                  <ErrorBoundary title="No se puede dibujar el mapa de riesgo de la organización">
+                    <OrgRiskGraph
+                      graph={graph}
+                      summary={summary}
+                      findings={findings}
+                      selectedPrincipalId={selectedPrincipalId}
+                      onSelectPrincipal={handleSelectPrincipal}
+                      error={loadError}
+                      onRetry={refresh}
+                    />
+                  </ErrorBoundary>
+                </div>
+
+                {selectedPrincipalId && (
+                  <div ref={inspectorRef} style={{ scrollMarginTop: 16 }}>
+                    <ErrorBoundary key={selectedPrincipalId} title="No se pueden cargar los datos del usuario seleccionado">
+                      <PrincipalInspector
+                        principalId={selectedPrincipalId}
+                        findings={findings ?? []}
+                        traces={traces}
+                        audit={audit}
+                        dataVersion={dataVersion}
+                        onSelectPrincipal={handleSelectPrincipal}
+                        onClose={() => setSelectedPrincipalId(undefined)}
+                        onBackToGraph={scrollToGraph}
+                        onInvestigate={(findingId) => runAgent([findingId])}
+                        onDecide={decide}
+                      />
+                    </ErrorBoundary>
+                  </div>
+                )}
+              </Stack>
+            </div>
+          ) : (
+            <ResponsiveLayout>
+              <Box paddingY={24}>
+                {view === 2 ? (
+                  <AuditTrail entries={audit} />
+                ) : (
+                  <AnalysesView
+                    analyses={analyses}
+                    findings={findings}
+                    audit={audit}
+                    onStart={startAnalysis}
+                    error={loadError}
+                    onRetry={refresh}
+                    openId={openAnalysisId}
+                    onOpen={setOpenAnalysisId}
+                    selectedFindingId={selectedFindingId}
+                    onSelectFinding={setSelectedFindingId}
+                    queued={queued}
+                    traces={traces}
+                    onInvestigateAll={investigateAll}
+                    renderDetail={renderDetail}
+                  />
+                )}
+              </Box>
+            </ResponsiveLayout>
+          )}
+        </>
       )}
     </>
   );

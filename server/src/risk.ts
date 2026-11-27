@@ -401,7 +401,7 @@ export function buildOrgGraph(repo: Repo, allFindings: FindingView[]): OrgGraph 
     const members = c.memberships.filter((m) => m.groupId === g.id).map((m) => m.principalId);
     const hasHighRisk = g.entitlementIds.some((eid) => repo.entitlement(eid)?.risk === "high");
 
-    // Cross-department access: member is in a group belonging to a DIFFERENT department (or DEMO lab from outside IT)
+    // Cross-department access: member is in a group belonging to a DIFFERENT department (or the device lab from outside IT)
     const targetDept = g.department ?? (g.id === "g-demo-lab" ? "TI" : undefined);
     const targetHead = targetDept ? headByDept.get(targetDept) : undefined;
 

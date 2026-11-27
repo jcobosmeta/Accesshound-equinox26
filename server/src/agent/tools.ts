@@ -87,7 +87,7 @@ export function lookupTools(repo: Repo) {
     }),
     tool({
       name: "get_badge_events",
-      description: "Get a person's device check-in events (Móvil Trabajo / Descodificador DEMO: device, time, site, granted/denied), optionally since an ISO date.",
+      description: "Get a person's device check-in events (Móvil Trabajo / Descodificador: device, time, site, granted/denied), optionally since an ISO date.",
       inputSchema: z.object({ person_id: z.string(), since: z.string().optional() }),
       run: ({ person_id, since }) =>
         repo.badgeEvents(person_id, since).map((e) => ({ ...e, door: repo.entitlement(e.doorEntitlementId)?.name })),

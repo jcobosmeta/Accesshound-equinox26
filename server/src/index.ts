@@ -6,6 +6,7 @@ import { investigateLive } from "./agent/live.js";
 import { investigateReplay } from "./agent/replay.js";
 import type { AgentEvent, Proposal } from "./agent/types.js";
 import { auditCsv, auditFileName, auditJson } from "./audit-export.js";
+import { ALERT_TEMPLATES, monitor, type AlertKind, type MonitorStreamEvent } from "./monitor.js";
 import { buildOrgGraph, computePrincipalRisk } from "./risk.js";
 import { store } from "./store.js";
 
@@ -160,7 +161,79 @@ app.get("/api/audit/export", (req, res) => {
 
 app.post("/api/reset", (_req, res) => {
   store.reset();
+  monitor.reset();
   res.json({ ok: true });
+});
+
+// ---- Real-time monitoring ------------------------------------------------------------------
+
+/** Live feed of alerts, decisions, blocks and config changes, as Server-Sent Events. */
+app.get("/api/monitor/stream", (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+  const send = (e: MonitorStreamEvent) => res.write(`data: ${JSON.stringify(e)}\n\n`);
+  const unsubscribe = monitor.subscribe(send);
+  // Comments keep proxies from closing an idle stream.
+  const ping = setInterval(() => res.write(": ping\n\n"), 20000);
+  req.on("close", () => {
+    clearInterval(ping);
+    unsubscribe();
+  });
+});
+
+/** Users the audit flagged, which the monitor watches most closely. */
+app.get("/api/monitor/watchlist", (_req, res) => {
+  res.json(monitor.watchlist());
+});
+
+/** Alert types an external script can send. */
+app.get("/api/monitor/alert-types", (_req, res) => {
+  res.json(
+    Object.entries(ALERT_TEMPLATES).map(([kind, t]) => ({ kind, title: t.title, source: t.source, severity: t.severity, people: t.people, services: t.services }))
+  );
+});
+
+app.post("/api/monitor/config", (req, res) => {
+  res.json(monitor.configure(req.body ?? {}));
+});
+
+/**
+ * Ingest an alert: { principalId, kind, detail?, severity?, source? }.
+ * This is the webhook a SIEM or any script calls; the UI's "Simular aviso" uses it too.
+ */
+app.post("/api/monitor/alerts", (req, res) => {
+  const { principalId, kind, detail, severity, source } = req.body ?? {};
+  if (typeof principalId !== "string" || typeof kind !== "string")
+    return res.status(400).json({ error: "Faltan principalId y kind" });
+  try {
+    res.status(202).json(
+      monitor.ingest({
+        principalId,
+        kind: kind as AlertKind,
+        ...(typeof detail === "string" && detail ? { detail } : {}),
+        ...(["low", "medium", "high", "critical"].includes(severity) ? { severity } : {}),
+        ...(typeof source === "string" && source ? { source } : {}),
+      })
+    );
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+/** Accept or dismiss a block the engine proposed while automatic blocking was off. */
+app.post("/api/monitor/alerts/:id/confirm", (req, res) => {
+  try {
+    res.json(monitor.confirm(req.params.id, req.body?.accept !== false));
+  } catch (err) {
+    res.status(409).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+app.post("/api/monitor/unblock/:principalId", (req, res) => {
+  try {
+    res.json(monitor.unblock(req.params.principalId));
+  } catch (err) {
+    res.status(409).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });
 
 // In production, serve the built web app from the same port.
