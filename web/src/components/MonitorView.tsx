@@ -305,8 +305,6 @@ function WatchlistModal({
 // Below this risk score a watched user is hidden from the card; "Ver todos" opens the full list in a modal.
 const WATCH_MIN_SCORE = 10;
 
-const formatCountdown = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
-
 export function MonitorView({
   state,
   dataVersion,
@@ -348,21 +346,6 @@ export function MonitorView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, config?.running]);
 
-  // Leaving the tab before the alert arrives cancels it, so the 30 s count again on the next visit.
-  const pendingRef = React.useRef(false);
-  pendingRef.current = Boolean(config?.running && config?.nextAlertAt);
-  React.useEffect(() => () => {
-    if (pendingRef.current) api.monitor.configure({ running: false }).catch(() => {});
-  }, []);
-
-  // Countdown to the next simulated alert.
-  const [now, setNow] = React.useState(Date.now());
-  React.useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, []);
-  const nextIn = config?.nextAlertAt ? Math.max(0, Math.round((new Date(config.nextAlertAt).getTime() - now) / 1000)) : undefined;
-
   return (
     <Stack space={24}>
       <style>{`
@@ -383,7 +366,6 @@ export function MonitorView({
           <LiveDot on={running && connected} />
           <Stack space={2}>
             {!(connected && running) && <Text2 medium>{!connected ? "Sin conexión con el servidor" : "Iniciando…"}</Text2>}
-            {connected && running && nextIn !== undefined && <Secondary>Próximo aviso en {formatCountdown(nextIn)}</Secondary>}
           </Stack>
         </Inline>
       </Inline>
@@ -403,7 +385,7 @@ export function MonitorView({
             <EmptyStateCard
               asset={<IconBellRegular size="100%" color={skinVars.colors.brand} />}
               title="Todavía no ha llegado ningún aviso"
-              description="El aviso llega a los 30 segundos de entrar en esta pestaña."
+              description="Los avisos de seguridad aparecerán aquí en cuanto lleguen."
             />
           ) : (
             <Stack space={12}>

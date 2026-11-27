@@ -246,7 +246,6 @@ export type AlertKind =
   | "malware"
   | "off_hours_badge"
   | "privilege_escalation"
-  | "tor_login"
   | "new_device"
   | "repo_clone"
   | "malicious_script";

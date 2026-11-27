@@ -68,8 +68,8 @@ const saveAnalyses = (analyses: Analysis[]) => {
 const Brand = () => (
   <Inline space={8} alignItems="center">
     <img src="/logo.svg" width={28} height={28} alt="" />
-    <Text3 medium truncate>
-      Mi Portero
+    <Text3 regular truncate>
+      Mi <strong style={{ fontWeight: 700 }}>Portero</strong>
     </Text3>
   </Inline>
 );

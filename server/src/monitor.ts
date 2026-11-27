@@ -21,7 +21,6 @@ export type AlertKind =
   | "malware"
   | "off_hours_badge"
   | "privilege_escalation"
-  | "tor_login"
   | "new_device"
   | "repo_clone"
   | "malicious_script";
@@ -163,14 +162,6 @@ export const ALERT_TEMPLATES: Record<AlertKind, AlertTemplate> = {
     people: true,
     services: true,
     detail: () => `La cuenta se ha añadido a sí misma al grupo ${pick(["Domain Admins", "Global Administrators", "SAP_ALL"])}.`,
-  },
-  tor_login: {
-    source: "Firewall",
-    severity: "medium",
-    title: "Acceso desde Tor",
-    people: true,
-    services: true,
-    detail: () => `Inicio de sesión desde un nodo de salida de Tor (${ip()}).`,
   },
   new_device: {
     source: "IdP (Azure AD)",
@@ -325,11 +316,6 @@ async function decideByIa(alert: SecurityAlert): Promise<MonitorDecision> {
 // ---------------------------------------------------------------------------------------------
 
 const MAX_EVENTS = 200;
-/** First simulated alert of every monitoring session (and after a reset): Marcos Barba logging in via Tor. */
-const FIRST_SIMULATED_ALERT: { principalId: string; kind: AlertKind } = {
-  principalId: "p-020",
-  kind: "tor_login",
-};
 
 /**
  * Alerts already handled before the demo starts, oldest first. They load with their decision
@@ -362,7 +348,7 @@ const HISTORY: {
     daysAgo: 1,
     at: "19:30",
     severity: "medium",
-    detail: "3 repositorios clonados a las 19:30 (fuera de su horario habitual), 38 minutos después de iniciar sesión desde un iPhone nuevo.",
+    detail: "2 repositorios clonados a las 19:30 (fuera de su horario habitual), 38 minutos después de iniciar sesión desde un iPhone nuevo.",
     action: "watch",
     reason: "Clonado fuera de horario poco después de estrenar dispositivo. Puede ser legítimo, pero queda en revisión hasta que lo confirme su responsable.",
   },
@@ -411,9 +397,6 @@ class Monitor {
   events: MonitorEvent[] = [];
   blocked = new Map<string, BlockedPrincipal>();
   private seq = 0;
-  /** Whether the fixed first simulated alert has gone out in this session. */
-  private firstSent = false;
-  private timer?: NodeJS.Timeout;
   private listeners = new Set<(e: MonitorStreamEvent) => void>();
   /** Alerts are decided one at a time, in arrival order, so blocks never race each other. */
   private queue: Promise<void> = Promise.resolve();
@@ -477,49 +460,25 @@ class Monitor {
   }
 
   reset() {
-    this.stopTimer();
     this.config = { ...this.config, running: false, nextAlertAt: undefined };
     this.events = [];
     this.blocked.clear();
     this.seq = 0;
-    this.firstSent = false;
     this.queue = Promise.resolve();
     this.loadHistory();
     this.emit(this.snapshot());
   }
 
   configure(patch: Partial<MonitorConfig>) {
-    const next = { ...this.config };
+    const next = { ...this.config, nextAlertAt: undefined };
     if (typeof patch.running === "boolean") next.running = patch.running;
     if (patch.engine === "script" || patch.engine === "ia") next.engine = patch.engine;
     if (typeof patch.autoBlock === "boolean") next.autoBlock = patch.autoBlock;
     if (typeof patch.intervalSec === "number" && patch.intervalSec >= 5 && patch.intervalSec <= 3600) next.intervalSec = Math.round(patch.intervalSec);
     if (typeof patch.firstDelaySec === "number" && patch.firstDelaySec >= 0 && patch.firstDelaySec <= 3600) next.firstDelaySec = Math.round(patch.firstDelaySec);
-    const restart = next.running !== this.config.running || next.intervalSec !== this.config.intervalSec;
     this.config = next;
-    if (restart) {
-      this.stopTimer();
-      if (next.running) this.schedule(next.firstDelaySec);
-      else this.config = { ...this.config, nextAlertAt: undefined };
-    }
     this.emit({ type: "config", config: this.config });
     return this.config;
-  }
-
-  /** A single simulated alert `firstDelaySec` after monitoring starts; no repeats after it. */
-  private schedule(delaySec: number) {
-    this.config = { ...this.config, nextAlertAt: new Date(Date.now() + delaySec * 1000).toISOString() };
-    this.timer = setTimeout(() => {
-      this.timer = undefined;
-      this.simulate();
-      this.config = { ...this.config, nextAlertAt: undefined };
-      this.emit({ type: "config", config: this.config });
-    }, delaySec * 1000);
-  }
-
-  private stopTimer() {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = undefined;
   }
 
   /** People and service accounts the audit flagged: open findings, high risk, or already blocked. */
@@ -549,27 +508,7 @@ class Monitor {
     return out.sort((a, b) => Number(b.blocked) - Number(a.blocked) || b.riskScore - a.riskScore);
   }
 
-  /** First alert is fixed (Marcos Barba via Tor); subsequent alerts are random, mostly about flagged users. */
-  simulate() {
-    const { repo } = store;
-    if (!this.firstSent && repo.principalKind(FIRST_SIMULATED_ALERT.principalId)) {
-      this.firstSent = true;
-      return this.ingest(FIRST_SIMULATED_ALERT);
-    }
-    const watched = this.watchlist().filter((w) => !w.blocked);
-    const everyone = [
-      ...repo.c.people.filter((p) => p.status === "active").map((p) => p.id),
-      ...repo.c.serviceAccounts.map((s) => s.id),
-    ];
-    const principalId = watched.length && Math.random() < 0.7 ? pick(watched).id : pick(everyone);
-    const isService = repo.principalKind(principalId) === "service";
-    const kinds = (Object.keys(ALERT_TEMPLATES) as AlertKind[]).filter((k) => (isService ? ALERT_TEMPLATES[k].services : ALERT_TEMPLATES[k].people));
-    // Low-severity noise is common, critical alerts are rare.
-    const weighted = kinds.flatMap((k) => Array(({ low: 4, medium: 3, high: 2, critical: 1 } as const)[ALERT_TEMPLATES[k].severity]).fill(k) as AlertKind[]);
-    return this.ingest({ principalId, kind: pick(weighted) });
-  }
-
-  /** Accept an alert (from the simulator, the UI or an external script) and queue its decision. */
+  /** Accept an alert (from the UI or an external script) and queue its decision. */
   ingest(input: { principalId: string; kind: AlertKind; detail?: string; severity?: AlertSeverity; source?: string }): MonitorEvent {
     const { repo } = store;
     const kind = repo.principalKind(input.principalId);
