@@ -22,7 +22,6 @@ import IconBuildingTreeRegular from "@telefonica/mistica-icons/icon-building-tre
 import IconCheckRegular from "@telefonica/mistica-icons/icon-check-regular";
 import IconClipboardRegular from "@telefonica/mistica-icons/icon-clipboard-regular";
 import IconMoonRegular from "@telefonica/mistica-icons/icon-moon-regular";
-import IconShieldLockRegular from "@telefonica/mistica-icons/icon-shield-lock-regular";
 import IconSunRegular from "@telefonica/mistica-icons/icon-sun-regular";
 import * as React from "react";
 import {
@@ -50,7 +49,7 @@ import { ModeTag } from "./present";
 const MAX_PARALLEL = 4;
 const QUEUED = "En cola: empezará cuando termine otra investigación.";
 
-const ANALYSES_KEY = "accesshound.analyses";
+const ANALYSES_KEY = "mi-portero.analyses";
 const loadAnalyses = (): Analysis[] => {
   try {
     return JSON.parse(localStorage.getItem(ANALYSES_KEY) ?? "[]") as Analysis[];
@@ -68,7 +67,7 @@ const saveAnalyses = (analyses: Analysis[]) => {
 
 const Brand = () => (
   <Inline space={8} alignItems="center">
-    <IconShieldLockRegular size={28} color={skinVars.colors.brand} />
+    <img src="/logo.svg" width={28} height={28} alt="" />
     <Text3 regular truncate>
       Mi <strong style={{ fontWeight: 700 }}>Portero</strong>
     </Text3>

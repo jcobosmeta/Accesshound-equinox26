@@ -8,7 +8,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export type ColorScheme = "dark" | "light";
 
-const COLOR_SCHEME_KEY = "accesshound.colorScheme";
+const COLOR_SCHEME_KEY = "mi-portero.colorScheme";
 const loadColorScheme = (): ColorScheme => {
   try {
     return localStorage.getItem(COLOR_SCHEME_KEY) === "light" ? "light" : "dark";

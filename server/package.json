@@ -1,5 +1,5 @@
 {
-  "name": "@accesshound/server",
+  "name": "@mi-portero/server",
   "private": true,
   "type": "module",
   "scripts": {
