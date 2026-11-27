@@ -11,7 +11,7 @@
 //
 // Three planted cases (all fictional; titles are deliberately gender-neutral):
 //   1. Patricia Román    — moved Marketing → Diseño in March, still holds Marketing Firebase & VPN DEMO access
-//   2. Carlos Nieto      — Móvil Trabajo check-in in Madrid while VPN General logs in from Lagos, 19 minutes apart
+//   2. Carlos Nieto      — Móvil Trabajo check-in in Madrid while VPN General logs in from Lagos, 19 minutes apart (8 Sep)
 //   3. Marcos Barba      — DECOY: Descodificador access none of the IA peers have, backed by a
 //                          valid CISO-approved ticket. The agent should propose KEEP.
 //
@@ -164,7 +164,7 @@ for (const id of ["p-050", "p-051"]) {
 
 // Case 1 — Patricia Román: moved Marketing → Diseño on 2026-03-02, kept Marketing VPN DEMO & Marketing Firebase.
 grant("p-053", "g-mkt-staff", "2020-06-01");
-grant("p-053", "g-mkt-firebase", "2021-01-11", "TCK-2021-0007");
+grant("p-053", "g-mkt-firebase", "2021-06-14", "TCK-2021-0007"); // after Maricruz, the approver, joined (2021-03-08)
 
 // Case 3 (decoy) — Marcos Barba: IA engineer with Descodificador access approved by CISO.
 grant("p-020", "g-demo-lab", "2026-04-15", "TCK-2026-0412");
@@ -188,7 +188,7 @@ const tickets: AccessTicket[] = [
     requestedBy: "p-051",
     approvedBy: "p-051",
     justification: "Analítica de campañas: necesita Firebase para medir las conversiones de Marketing.",
-    approvedDate: "2021-01-11",
+    approvedDate: "2021-06-14",
   },
   {
     id: "TCK-2026-0412",
@@ -218,7 +218,6 @@ const pad = (n: number) => String(n).padStart(2, "0");
 for (const p of people.filter((x) => x.status === "active")) {
   for (const day of workdays) {
     if (rand() < 0.2) continue;
-    if (p.id === "p-060" && day === "2026-11-24") continue; // Case 2 sets this morning explicitly
     const h = 8 + Math.floor(rand() * 2);
     const m = Math.floor(rand() * 60);
     badgeEvents.push({ personId: p.id, doorEntitlementId: "ent-movil-trabajo", time: `${day}T${pad(h)}:${pad(m)}:00+01:00`, ...MADRID, result: "granted" });
@@ -233,8 +232,10 @@ badgeEvents.push({ personId: "p-050", doorEntitlementId: "ent-descodificador-dem
 badgeEvents.push({ personId: "p-020", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-21T03:12:00+01:00", ...MADRID, result: "granted" });
 
 // Case 2 — Carlos Nieto: Móvil Trabajo check-in in Madrid at 09:12, VPN General login from Lagos at 09:31.
-badgeEvents.push({ personId: "p-060", doorEntitlementId: "ent-movil-trabajo", time: "2026-11-24T09:12:00+01:00", ...MADRID, result: "granted" });
-loginEvents.push({ principalId: "p-060", system: "VPN General", time: "2026-11-24T09:31:00+01:00", city: "Lagos", country: "Nigeria", ip: "102.89.34.120" });
+// Eleven weeks before the snapshot, on purpose: the audit uncovers something nobody noticed at the time,
+// rather than something so recent it looks like we just missed it.
+badgeEvents.push({ personId: "p-060", doorEntitlementId: "ent-movil-trabajo", time: "2026-09-08T09:12:00+02:00", ...MADRID, result: "granted" });
+loginEvents.push({ principalId: "p-060", system: "VPN General", time: "2026-09-08T09:31:00+02:00", city: "Lagos", country: "Nigeria", ip: "102.89.34.120" });
 
 export const company: Company = {
   name: "FCYBERL",
