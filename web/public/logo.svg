@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Mi Portero">
+<rect width="96" height="96" rx="24" fill="#0B2739"/>
+<path d="M20 96V46A28 28 0 0 1 76 46V96Z" fill="#019DF4"/>
+<path fill="#0B2739" d="M28 96C28 76 37 63 48 63C59 63 68 76 68 96Z"/>
+<circle cx="48" cy="54" r="10" fill="#FFFFFF"/>
+<path fill="#0B2739" d="M37 49C37 38 42 33 48 33C54 33 59 38 59 49Z"/>
+<rect x="34.5" y="46" width="27" height="5" rx="2.5" fill="#0B2739"/>
+</svg>
