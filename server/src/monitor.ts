@@ -362,7 +362,7 @@ const HISTORY: {
     daysAgo: 1,
     at: "19:30",
     severity: "medium",
-    detail: "3 repositorios clonados a las 19:30 (fuera de su horario habitual), 38 minutos después de iniciar sesión desde un iPhone nuevo.",
+    detail: "2 repositorios clonados a las 19:30 (fuera de su horario habitual), 38 minutos después de iniciar sesión desde un iPhone nuevo.",
     action: "watch",
     reason: "Clonado fuera de horario poco después de estrenar dispositivo. Puede ser legítimo, pero queda en revisión hasta que lo confirme su responsable.",
   },

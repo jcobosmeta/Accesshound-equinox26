@@ -69,8 +69,8 @@ const saveAnalyses = (analyses: Analysis[]) => {
 const Brand = () => (
   <Inline space={8} alignItems="center">
     <IconShieldLockRegular size={28} color={skinVars.colors.brand} />
-    <Text3 medium truncate>
-      Mi Portero
+    <Text3 regular truncate>
+      Mi <strong style={{ fontWeight: 700 }}>Portero</strong>
     </Text3>
   </Inline>
 );
