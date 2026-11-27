@@ -1,4 +1,5 @@
 import "@telefonica/mistica/css/mistica.css";
+import "./fonts.css";
 import { getTelefonicaSkin, skinVars, ThemeContextProvider } from "@telefonica/mistica";
 import * as React from "react";
 import { createRoot } from "react-dom/client";
@@ -11,7 +12,7 @@ const theme = {
   i18n: { locale: "es-ES" as const, phoneNumberFormattingRegionCode: "ES" as const },
 };
 
-// Telefónica Sans isn't bundled, so fall back to the platform's UI sans-serif.
+// Font family must match the skin: Telefónica skin → 'Telefonica Sans' (@font-face rules in fonts.css).
 const GlobalStyles = () => (
   <style>{`
     :root {
@@ -19,7 +20,7 @@ const GlobalStyles = () => (
     }
     body {
       margin: 0;
-      font-family: 'Telefonica Sans', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: 'Telefonica Sans', 'Helvetica', 'Arial', sans-serif;
       background-color: ${skinVars.colors.background};
       color: ${skinVars.colors.textPrimary};
     }
