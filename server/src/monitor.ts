@@ -19,11 +19,12 @@ export type AlertKind =
   | "mass_download"
   | "mfa_fatigue"
   | "malware"
-  | "credential_leak"
   | "off_hours_badge"
   | "privilege_escalation"
   | "tor_login"
-  | "new_device";
+  | "new_device"
+  | "repo_clone"
+  | "malicious_script";
 export type Engine = "script" | "ia";
 export type MonitorAction = "block" | "watch" | "ignore";
 
@@ -147,14 +148,6 @@ export const ALERT_TEMPLATES: Record<AlertKind, AlertTemplate> = {
     services: true,
     detail: () => `Detectado ${pick(["ransomware LockBit", "un infostealer (RedLine)", "una puerta trasera Cobalt Strike"])} en el equipo asociado. Proceso aislado.`,
   },
-  credential_leak: {
-    source: "Threat Intel",
-    severity: "high",
-    title: "Credenciales filtradas",
-    people: true,
-    services: true,
-    detail: () => `Usuario y contraseña encontrados en un volcado publicado hace ${1 + Math.floor(Math.random() * 6)} h en un foro.`,
-  },
   off_hours_badge: {
     source: "Control de accesos físico",
     severity: "medium",
@@ -186,6 +179,22 @@ export const ALERT_TEMPLATES: Record<AlertKind, AlertTemplate> = {
     people: true,
     services: false,
     detail: () => `Primer inicio de sesión desde un ${pick(["iPhone", "portátil Windows", "Mac"])} no registrado.`,
+  },
+  repo_clone: {
+    source: "GitHub Audit Log",
+    severity: "medium",
+    title: "Clonado de repositorios fuera de horario",
+    people: true,
+    services: true,
+    detail: () => `${2 + Math.floor(Math.random() * 4)} repositorios clonados a las ${pick(["19:30", "21:10", "23:45"])}, fuera de su horario habitual.`,
+  },
+  malicious_script: {
+    source: "EDR",
+    severity: "critical",
+    title: "Ejecución de script malicioso",
+    people: true,
+    services: true,
+    detail: () => `Ejecutado un script ${pick(["PowerShell ofuscado", "Bash que descarga un binario remoto"])} que intenta volcar credenciales del equipo. Proceso aislado.`,
   },
 };
 
@@ -237,7 +246,7 @@ const DecisionSchema = z.object({
   confidence: z.enum(["low", "medium", "high"]),
 });
 
-const IA_SYSTEM = `You are AccessHound's real-time security monitor. A security alert has just arrived about one user of the company. You also get what the access audit already knows about that user: their risk score, open audit findings, access and recent activity.
+const IA_SYSTEM = `You are Mi Portero's real-time security monitor. A security alert has just arrived about one user of the company. You also get what the access audit already knows about that user: their risk score, open audit findings, access and recent activity.
 
 Decide in seconds whether to block all of the user's access now:
 - "block" when the alert plus the audit context indicate a likely compromise or insider threat (e.g. a critical alert, or a serious alert about someone who already has unjustified or leftover access, or who has left the company).
@@ -316,16 +325,134 @@ async function decideByIa(alert: SecurityAlert): Promise<MonitorDecision> {
 // ---------------------------------------------------------------------------------------------
 
 const MAX_EVENTS = 200;
+/** First simulated alert of every monitoring session (and after a reset): Marcos Barba logging in via Tor. */
+const FIRST_SIMULATED_ALERT: { principalId: string; kind: AlertKind } = {
+  principalId: "p-020",
+  kind: "tor_login",
+};
+
+/**
+ * Alerts already handled before the demo starts, oldest first. They load with their decision
+ * fixed (blocks are applied for real, so they show under "Bloqueados" and can be undone).
+ * `daysAgo`/`at` place them yesterday evening so they never look like they are in the future.
+ */
+const HISTORY: {
+  principalId: string;
+  kind: AlertKind;
+  daysAgo: number;
+  at: string;
+  severity: AlertSeverity;
+  detail: string;
+  action: MonitorAction;
+  reason: string;
+}[] = [
+  {
+    principalId: "p-020",
+    kind: "new_device",
+    daysAgo: 1,
+    at: "18:52",
+    severity: "low",
+    detail: "Primer inicio de sesión desde un iPhone no registrado, en Madrid y con MFA correcto.",
+    action: "ignore",
+    reason: "Aviso de severidad baja: dispositivo móvil nuevo, misma ubicación habitual y MFA superado. Se registra sin más acciones.",
+  },
+  {
+    principalId: "p-020",
+    kind: "repo_clone",
+    daysAgo: 1,
+    at: "19:30",
+    severity: "medium",
+    detail: "3 repositorios clonados a las 19:30 (fuera de su horario habitual), 38 minutos después de iniciar sesión desde un iPhone nuevo.",
+    action: "watch",
+    reason: "Clonado fuera de horario poco después de estrenar dispositivo. Puede ser legítimo, pero queda en revisión hasta que lo confirme su responsable.",
+  },
+  {
+    principalId: "p-060",
+    kind: "mass_download",
+    daysAgo: 1,
+    at: "20:14",
+    severity: "high",
+    detail: "342 ficheros descargados de SharePoint en 10 minutos.",
+    action: "block",
+    reason: "Descarga masiva muy por encima de su actividad normal en SharePoint: patrón compatible con exfiltración de datos. Se bloquean sus accesos.",
+  },
+  {
+    principalId: "p-051",
+    kind: "new_device",
+    daysAgo: 1,
+    at: "21:05",
+    severity: "low",
+    detail: "Primer inicio de sesión desde un portátil Windows no registrado.",
+    action: "watch",
+    reason: "Dispositivo nuevo en una cuenta con accesos de administración de TI: se mantiene en vigilancia hasta registrar el equipo.",
+  },
+  {
+    principalId: "p-010",
+    kind: "malicious_script",
+    daysAgo: 1,
+    at: "22:41",
+    severity: "critical",
+    detail: "Ejecutado un script PowerShell ofuscado que intenta volcar credenciales del equipo. Proceso aislado por el EDR.",
+    action: "block",
+    reason: "Aviso crítico del EDR: ejecución de un script malicioso en su equipo. Un aviso crítico siempre bloquea los accesos.",
+  },
+];
+
+const historyTime = (daysAgo: number, at: string, extraSec = 0) => {
+  const [h, m] = at.split(":").map(Number);
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  d.setHours(h!, m!, extraSec, 0);
+  return d.toISOString();
+};
 
 class Monitor {
   config: MonitorConfig = { running: false, engine: "script", autoBlock: true, firstDelaySec: 30, intervalSec: 60 };
   events: MonitorEvent[] = [];
   blocked = new Map<string, BlockedPrincipal>();
   private seq = 0;
+  /** Whether the fixed first simulated alert has gone out in this session. */
+  private firstSent = false;
   private timer?: NodeJS.Timeout;
   private listeners = new Set<(e: MonitorStreamEvent) => void>();
   /** Alerts are decided one at a time, in arrival order, so blocks never race each other. */
   private queue: Promise<void> = Promise.resolve();
+
+  constructor() {
+    this.loadHistory();
+  }
+
+  /** Seed the feed with the alerts in HISTORY, newest on top, applying their blocks. */
+  private loadHistory() {
+    const { repo } = store;
+    for (const h of HISTORY) {
+      if (!repo.principalKind(h.principalId)) continue;
+      const template = ALERT_TEMPLATES[h.kind];
+      const alert: SecurityAlert = {
+        id: `AL-${String(++this.seq).padStart(4, "0")}`,
+        time: historyTime(h.daysAgo, h.at),
+        principalId: h.principalId,
+        principalName: repo.principalName(h.principalId),
+        kind: h.kind,
+        source: template.source,
+        severity: h.severity,
+        title: template.title,
+        detail: h.detail,
+      };
+      const event: MonitorEvent = {
+        alert,
+        status: "decided",
+        decision: { action: h.action, engine: "script", confidence: "high", reason: h.reason },
+        applied: [],
+        decidedAt: historyTime(h.daysAgo, h.at, 4),
+      };
+      if (h.action === "block") {
+        event.applied = this.block(h.principalId, alert.id, h.reason);
+        this.blocked.get(h.principalId)!.at = event.decidedAt!;
+      }
+      this.events.unshift(event);
+    }
+  }
 
   subscribe(fn: (e: MonitorStreamEvent) => void) {
     this.listeners.add(fn);
@@ -354,7 +481,10 @@ class Monitor {
     this.config = { ...this.config, running: false, nextAlertAt: undefined };
     this.events = [];
     this.blocked.clear();
+    this.seq = 0;
+    this.firstSent = false;
     this.queue = Promise.resolve();
+    this.loadHistory();
     this.emit(this.snapshot());
   }
 
@@ -376,12 +506,13 @@ class Monitor {
     return this.config;
   }
 
-  /** First alert after `firstDelaySec`, then one every `intervalSec`: 0:30, 1:30, 2:30… */
+  /** A single simulated alert `firstDelaySec` after monitoring starts; no repeats after it. */
   private schedule(delaySec: number) {
     this.config = { ...this.config, nextAlertAt: new Date(Date.now() + delaySec * 1000).toISOString() };
     this.timer = setTimeout(() => {
+      this.timer = undefined;
       this.simulate();
-      this.schedule(this.config.intervalSec);
+      this.config = { ...this.config, nextAlertAt: undefined };
       this.emit({ type: "config", config: this.config });
     }, delaySec * 1000);
   }
@@ -418,9 +549,13 @@ class Monitor {
     return out.sort((a, b) => Number(b.blocked) - Number(a.blocked) || b.riskScore - a.riskScore);
   }
 
-  /** A random alert, mostly about users the audit already flagged. */
+  /** First alert is fixed (Marcos Barba via Tor); subsequent alerts are random, mostly about flagged users. */
   simulate() {
     const { repo } = store;
+    if (!this.firstSent && repo.principalKind(FIRST_SIMULATED_ALERT.principalId)) {
+      this.firstSent = true;
+      return this.ingest(FIRST_SIMULATED_ALERT);
+    }
     const watched = this.watchlist().filter((w) => !w.blocked);
     const everyone = [
       ...repo.c.people.filter((p) => p.status === "active").map((p) => p.id),

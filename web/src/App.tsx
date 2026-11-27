@@ -1,6 +1,5 @@
 import {
   Box,
-  ButtonSecondary,
   Grid,
   Inline,
   MainNavigationBar,
@@ -15,7 +14,6 @@ import {
   Text3,
   TextLink,
   skinVars,
-  useDialog,
   useScreenSize,
   useSnackbar,
 } from "@telefonica/mistica";
@@ -23,8 +21,9 @@ import IconAlertRegular from "@telefonica/mistica-icons/icon-alert-regular";
 import IconBuildingTreeRegular from "@telefonica/mistica-icons/icon-building-tree-regular";
 import IconCheckRegular from "@telefonica/mistica-icons/icon-check-regular";
 import IconClipboardRegular from "@telefonica/mistica-icons/icon-clipboard-regular";
-import IconRefreshRegular from "@telefonica/mistica-icons/icon-refresh-regular";
+import IconMoonRegular from "@telefonica/mistica-icons/icon-moon-regular";
 import IconShieldLockRegular from "@telefonica/mistica-icons/icon-shield-lock-regular";
+import IconSunRegular from "@telefonica/mistica-icons/icon-sun-regular";
 import * as React from "react";
 import {
   api,
@@ -46,7 +45,6 @@ import { OrgRiskGraph } from "./components/OrgRiskGraph";
 import { PrincipalInspector } from "./components/PrincipalInspector";
 import { SummaryBand } from "./components/SummaryBand";
 import { ModeTag } from "./present";
-import { forgetRevocations } from "./usePrincipal";
 
 /** Investigations that stream at once; the rest wait in a queue. */
 const MAX_PARALLEL = 4;
@@ -72,7 +70,7 @@ const Brand = () => (
   <Inline space={8} alignItems="center">
     <IconShieldLockRegular size={28} color={skinVars.colors.brand} />
     <Text3 medium truncate>
-      AccessHound
+      Mi Portero
     </Text3>
   </Inline>
 );
@@ -138,7 +136,13 @@ const AuditBreadcrumb = ({ view, onRoot }: { view: AuditView; onRoot: () => void
   </Inline>
 );
 
-export function App() {
+export function App({
+  colorScheme = "dark",
+  onToggleColorScheme,
+}: {
+  colorScheme?: "dark" | "light";
+  onToggleColorScheme?: () => void;
+}) {
   // Top-level sections: 0 = Auditoría, 1 = Monitorización.
   const [section, setSection] = React.useState<0 | 1>(0);
   // Views inside Auditoría, picked from its dropdown: 0 = risk map, 1 = findings, 2 = audit trail.
@@ -165,7 +169,6 @@ export function App() {
   const [openAnalysisId, setOpenAnalysisId] = React.useState<string | undefined>(() => loadAnalyses().at(-1)?.id);
   React.useEffect(() => saveAnalyses(analyses), [analyses]);
   const { openSnackbar } = useSnackbar();
-  const { confirm } = useDialog();
   const { isTabletOrSmaller } = useScreenSize();
 
   const graphSectionRef = React.useRef<HTMLDivElement>(null);
@@ -327,28 +330,6 @@ export function App() {
     [openSnackbar, refresh]
   );
 
-  const reset = () =>
-    confirm({
-      title: "¿Restablecer la demo?",
-      message:
-        "Se restauran los datos de acceso originales y se borran todas las propuestas, los análisis, el registro de auditoría y los avisos y bloqueos de la monitorización.",
-      acceptText: "Restablecer",
-      cancelText: "Cancelar",
-      destructive: true,
-      onAccept: async () => {
-        await api.reset();
-        forgetRevocations();
-        queue.current = [];
-        setQueued(new Set());
-        setTraces({});
-        setAnalyses([]);
-        setOpenAnalysisId(undefined);
-        setDataVersion((v) => v + 1);
-        await refresh();
-        openSnackbar({ message: "Datos de la demo restaurados.", type: "INFORMATIVE" });
-      },
-    });
-
   const openFindingsCount = findings?.filter((f) => f.status !== "approved" && f.status !== "resolved").length ?? 0;
 
   const renderDetail = (finding: Finding) => (
@@ -400,20 +381,19 @@ export function App() {
           },
         ]}
         right={
-          isTabletOrSmaller ? (
-            <NavigationBarActionGroup>
-              <NavigationBarAction aria-label="Restablecer la demo" onPress={reset}>
-                <IconRefreshRegular color="currentColor" />
-              </NavigationBarAction>
-            </NavigationBarActionGroup>
-          ) : (
-            <Inline space={16} alignItems="center">
-              {summary && <ModeTag mode={summary.agentMode} />}
-              <ButtonSecondary small StartIcon={IconRefreshRegular} onPress={reset}>
-                Restablecer
-              </ButtonSecondary>
-            </Inline>
-          )
+          <Inline space={16} alignItems="center">
+            {!isTabletOrSmaller && summary && <ModeTag mode={summary.agentMode} />}
+            {onToggleColorScheme && (
+              <NavigationBarActionGroup>
+                <NavigationBarAction
+                  aria-label={colorScheme === "dark" ? "Cambiar a modo día" : "Cambiar a modo noche"}
+                  onPress={onToggleColorScheme}
+                >
+                  {colorScheme === "dark" ? <IconSunRegular color="currentColor" /> : <IconMoonRegular color="currentColor" />}
+                </NavigationBarAction>
+              </NavigationBarActionGroup>
+            )}
+          </Inline>
         }
       />
       {section === 1 ? (
@@ -466,6 +446,7 @@ export function App() {
                       onSelectPrincipal={handleSelectPrincipal}
                       error={loadError}
                       onRetry={refresh}
+                      colorScheme={colorScheme}
                     />
                   </ErrorBoundary>
                 </div>

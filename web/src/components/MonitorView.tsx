@@ -18,6 +18,7 @@ import {
   Title1,
   skinVars,
   useScreenSize,
+  useTheme,
 } from "@telefonica/mistica";
 import IconBellRegular from "@telefonica/mistica-icons/icon-bell-regular";
 import IconCloseRegular from "@telefonica/mistica-icons/icon-close-regular";
@@ -32,7 +33,7 @@ import {
   type MonitorEvent,
   type WatchedPrincipal,
 } from "../api";
-import { formatTime, scorePalette } from "../present";
+import { formatTime, getScorePalette } from "../present";
 
 export interface MonitorState {
   config?: MonitorConfig;
@@ -162,7 +163,8 @@ function EventCard({ event, onConfirm }: { event: MonitorEvent; onConfirm: (acce
 }
 
 function WatchRow({ w, onUnblock }: { w: WatchedPrincipal; onUnblock: () => void }) {
-  const p = scorePalette[w.riskLevel];
+  const { isDarkMode } = useTheme();
+  const p = getScorePalette(isDarkMode)[w.riskLevel];
   return (
     <div style={{ display: "grid", gridTemplateColumns: "48px minmax(0,1fr) auto", gap: 12, alignItems: "center", padding: "10px 0", borderTop: `1px solid ${skinVars.colors.divider}` }}>
       <div
@@ -346,6 +348,13 @@ export function MonitorView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, config?.running]);
 
+  // Leaving the tab before the alert arrives cancels it, so the 30 s count again on the next visit.
+  const pendingRef = React.useRef(false);
+  pendingRef.current = Boolean(config?.running && config?.nextAlertAt);
+  React.useEffect(() => () => {
+    if (pendingRef.current) api.monitor.configure({ running: false }).catch(() => {});
+  }, []);
+
   // Countdown to the next simulated alert.
   const [now, setNow] = React.useState(Date.now());
   React.useEffect(() => {
@@ -373,7 +382,7 @@ export function MonitorView({
         <Inline space={12} alignItems="center">
           <LiveDot on={running && connected} />
           <Stack space={2}>
-            <Text2 medium>{!connected ? "Sin conexión con el servidor" : running ? "Monitorización iniciada" : "Iniciando…"}</Text2>
+            {!(connected && running) && <Text2 medium>{!connected ? "Sin conexión con el servidor" : "Iniciando…"}</Text2>}
             {connected && running && nextIn !== undefined && <Secondary>Próximo aviso en {formatCountdown(nextIn)}</Secondary>}
           </Stack>
         </Inline>
@@ -394,7 +403,7 @@ export function MonitorView({
             <EmptyStateCard
               asset={<IconBellRegular size="100%" color={skinVars.colors.brand} />}
               title="Todavía no ha llegado ningún aviso"
-              description="El primer aviso llega a los 30 segundos de iniciar la monitorización y después uno cada minuto."
+              description="El aviso llega a los 30 segundos de entrar en esta pestaña."
             />
           ) : (
             <Stack space={12}>

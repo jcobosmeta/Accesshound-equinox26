@@ -22,7 +22,7 @@ export class ErrorBoundary extends React.Component<Props, { error?: Error }> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("AccessHound UI error:", error, info.componentStack);
+    console.error("Mi Portero UI error:", error, info.componentStack);
   }
 
   render() {
@@ -32,7 +32,7 @@ export class ErrorBoundary extends React.Component<Props, { error?: Error }> {
     if (this.props.fullScreen) {
       return (
         <ErrorFeedbackScreen
-          title="AccessHound ha tenido un problema"
+          title="Mi Portero ha tenido un problema"
           description="Recargar suele solucionarlo. Los datos de la demo están en el servidor, así que no se pierde nada."
           errorReference={error.message}
           primaryButton={<ButtonPrimary onPress={() => location.reload()}>Recargar</ButtonPrimary>}

@@ -209,14 +209,6 @@ export function computePrincipalRisk(repo: Repo, principalId: string, allFinding
         }
         break;
       }
-      case "toxic_combination": {
-        factors.push({ label: "Incumple la segregación de funciones (Firebase + Azure)", points: 47, severity: "high" });
-        const expiredTicket = repo.ticketsFor(principalId).some((t) => t.expiresDate && t.expiresDate < repo.c.asOf);
-        if (expiredTicket) {
-          factors.push({ label: "Ha caducado el ticket de excepción temporal", points: 6, severity: "high" });
-        }
-        break;
-      }
       case "role_change_leftover": {
         factors.push({ label: "Accesos sin revocar del departamento anterior", points: 51, severity: "high" });
         if (highEnts.some((e) => f.entitlementIds.includes(e.id))) {

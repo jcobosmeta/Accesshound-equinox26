@@ -9,7 +9,6 @@ export type FindingType =
   | "leaver_access"
   | "orphaned_service_account"
   | "role_change_leftover"
-  | "toxic_combination"
   | "impossible_travel"
   | "peer_outlier";
 
@@ -114,27 +113,7 @@ export function detect(repo: Repo): Finding[] {
     cover(p.id, ids);
   }
 
-  // 4. Separation-of-duties violations ----------------------------------------
-  for (const rule of c.sodRules) {
-    const principals = [...c.people.filter((p) => p.status === "active").map((p) => p.id), ...c.serviceAccounts.map((s) => s.id)];
-    for (const pid of principals) {
-      const access = repo.accessOf(pid);
-      const [a, b] = rule.duties.map((d) => access.find((x) => x.entitlement.duties?.includes(d)));
-      if (!a || !b) continue;
-      if (covered.has(`${pid}|${a.entitlement.id}`) || covered.has(`${pid}|${b.entitlement.id}`)) continue;
-      push({
-        type: "toxic_combination",
-        severity: "high",
-        principalId: pid,
-        title: `${repo.principalName(pid)} tiene a la vez ${a.entitlement.name} y ${b.entitlement.name}`,
-        facts: [`Incumple la regla «${rule.name}»: ${rule.why}`, `${a.entitlement.name} a través de ${a.group.name}; ${b.entitlement.name} a través de ${b.group.name}.`],
-        entitlementIds: [a.entitlement.id, b.entitlement.id],
-      });
-      cover(pid, [a.entitlement.id, b.entitlement.id]);
-    }
-  }
-
-  // 5. Impossible travel: badge in one country, login from another ------------
+  // 4. Impossible travel: badge in one country, login from another ------------
   const WINDOW_MS = 2 * 60 * 60 * 1000;
   for (const p of c.people.filter((x) => x.status === "active")) {
     const badges = repo.badgeEvents(p.id).filter((e) => e.result === "granted");
@@ -161,7 +140,7 @@ export function detect(repo: Repo): Finding[] {
     }
   }
 
-  // 6. High-risk access none of your peers have -------------------------------
+  // 5. High-risk access none of your peers have -------------------------------
   for (const p of c.people.filter((x) => x.status === "active")) {
     const peers = repo.activePeers(p);
     if (peers.length < 2) continue;

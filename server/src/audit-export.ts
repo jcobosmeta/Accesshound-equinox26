@@ -35,4 +35,4 @@ export function auditJson(entries: AuditEntry[], company: string): string {
   return JSON.stringify({ company, exportedAt: new Date().toISOString(), entries }, null, 2);
 }
 
-export const auditFileName = (ext: "csv" | "json") => `accesshound-auditoria-${new Date().toISOString().slice(0, 10)}.${ext}`;
+export const auditFileName = (ext: "csv" | "json") => `mi-portero-auditoria-${new Date().toISOString().slice(0, 10)}.${ext}`;

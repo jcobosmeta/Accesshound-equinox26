@@ -35,7 +35,7 @@ export const agentRequestSettings = {
 /** Placeholder the API puts in a progress block when the response was cut off; not worth showing. */
 const INTERRUPTED = "This part of the response was interrupted before it finished.";
 
-const SYSTEM = `You are AccessHound's access-review agent. A rule-based detector has flagged a possible access problem at a company. Your job is to investigate it, explain it in plain language, and propose what to do. A human reviewer makes the final decision; you never change access yourself.
+const SYSTEM = `You are Mi Portero's access-review agent. A rule-based detector has flagged a possible access problem at a company. Your job is to investigate it, explain it in plain language, and propose what to do. A human reviewer makes the final decision; you never change access yourself.
 
 How to work:
 - Verify the detector's claims with the tools before relying on them. Look at HR history, the access list, tickets, peers, badge swipes and logins as relevant.

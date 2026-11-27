@@ -1,4 +1,4 @@
-// Domain model for AccessHound. Everything the detectors and the agent see
+// Domain model for Mi Portero. Everything the detectors and the agent see
 // comes from a `Company` snapshot built from these types.
 
 export type Department = "Marketing" | "Diseño" | "TI" | "Ingeniería" | "IA" | "Innovación";
@@ -98,13 +98,6 @@ export interface LoginEvent {
   ip: string;
 }
 
-export interface SodRule {
-  id: string;
-  name: string;
-  duties: [string, string];
-  why: string;
-}
-
 export interface Company {
   name: string;
   /** Demo only: fixed value shown as the company-wide average risk instead of the computed one. */
@@ -119,5 +112,4 @@ export interface Company {
   tickets: AccessTicket[];
   badgeEvents: BadgeEvent[];
   loginEvents: LoginEvent[];
-  sodRules: SodRule[];
 }

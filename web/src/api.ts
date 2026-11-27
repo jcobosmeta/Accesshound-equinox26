@@ -67,7 +67,6 @@ export type FindingType =
   | "leaver_access"
   | "orphaned_service_account"
   | "role_change_leftover"
-  | "toxic_combination"
   | "impossible_travel"
   | "peer_outlier";
 
@@ -249,11 +248,12 @@ export type AlertKind =
   | "mass_download"
   | "mfa_fatigue"
   | "malware"
-  | "credential_leak"
   | "off_hours_badge"
   | "privilege_escalation"
   | "tor_login"
-  | "new_device";
+  | "new_device"
+  | "repo_clone"
+  | "malicious_script";
 export type MonitorEngine = "script" | "ia";
 export type MonitorAction = "block" | "watch" | "ignore";
 

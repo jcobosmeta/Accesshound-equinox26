@@ -23,6 +23,7 @@ import {
   UnorderedList,
   skinVars,
   useScreenSize,
+  useTheme,
 } from "@telefonica/mistica";
 import IconAiRegular from "@telefonica/mistica-icons/icon-ai-regular";
 import IconCheckRegular from "@telefonica/mistica-icons/icon-check-regular";
@@ -33,9 +34,9 @@ import {
   findingTypes,
   formatDate,
   formatTime,
+  getScorePalette,
   hrEventLabel,
   initials,
-  scorePalette,
   SeverityTag,
   StatusTag,
 } from "../present";
@@ -46,14 +47,15 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { ProposalCard } from "./ProposalCard";
 
 function LargeRiskRing({ score, level }: { score: number; level: RiskLevel }) {
-  const pal = scorePalette[level];
+  const { isDarkMode } = useTheme();
+  const pal = getScorePalette(isDarkMode)[level];
   const r = 28;
   const circ = 2 * Math.PI * r;
   const filled = (Math.max(0, Math.min(100, score)) / 100) * circ;
   return (
     <Inline space={12} alignItems="center">
       <svg width={70} height={70} viewBox="0 0 70 70" aria-label={`Puntuación de riesgo ${score}%`}>
-        <circle cx={35} cy={35} r={r} fill={pal.bg} stroke="#1E293B" strokeWidth={5.5} />
+        <circle cx={35} cy={35} r={r} fill={pal.bg} stroke={isDarkMode ? "#1E293B" : "#E2E8F0"} strokeWidth={5.5} />
         <circle
           cx={35}
           cy={35}
@@ -221,6 +223,8 @@ function FindingInvestigationSection({
 }
 
 function CleanInvestigationSummary({ detail }: { detail: PrincipalDetail }) {
+  const { isDarkMode } = useTheme();
+  const lowPal = getScorePalette(isDarkMode).low;
   return (
     <Boxed>
       <Box padding={24}>
@@ -231,21 +235,20 @@ function CleanInvestigationSummary({ detail }: { detail: PrincipalDetail }) {
                 width: 36,
                 height: 36,
                 borderRadius: "50%",
-                background: "#0D241C",
-                border: "1px solid #10B981",
+                background: lowPal.bg,
+                border: `1px solid ${lowPal.border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <IconCheckRegular size={20} color="#34D399" />
+              <IconCheckRegular size={20} color={lowPal.stroke} />
             </div>
             <Stack space={2}>
               <Text2 medium>No se han detectado incumplimientos activos</Text2>
               <Text1 regular color={skinVars.colors.textSecondary}>
-                Los seis detectores automáticos (accesos de bajas, cuentas huérfanas, restos de cambios de puesto, segregación de
-                funciones, viajes imposibles y anomalías frente a compañeros) no han encontrado nada en {detail.profile.name}. Su
+                Los cinco detectores automáticos (accesos de bajas, cuentas huérfanas, restos de cambios de puesto, viajes imposibles y anomalías frente a compañeros) no han encontrado nada en {detail.profile.name}. Su
                 riesgo del {detail.risk.score}% solo refleja la exposición base de sus privilegios.
               </Text1>
             </Stack>

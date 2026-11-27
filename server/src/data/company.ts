@@ -9,11 +9,10 @@
 // with Diego under Jose Torres and David under Sergio de los Santos) and Maricruz (TI: Sergio Jaramillo,
 // Felipe, Patricia, Gonzalo). The four heads hang from the company.
 //
-// Four planted cases (all fictional; titles are deliberately gender-neutral):
+// Three planted cases (all fictional; titles are deliberately gender-neutral):
 //   1. Patricia Román    — moved Marketing → Diseño in March, still holds Marketing Firebase & VPN DEMO access
-//   2. Daniel Nieto      — toxic combination: holds both Firebase AND Azure (expired "temporary" cover)
-//   3. Carlos Nieto      — Móvil Trabajo check-in in Madrid while VPN General logs in from Lagos, 19 minutes apart
-//   4. Marcos Barba      — DECOY: Descodificador access none of the IA peers have, backed by a
+//   2. Carlos Nieto      — Móvil Trabajo check-in in Madrid while VPN General logs in from Lagos, 19 minutes apart
+//   3. Marcos Barba      — DECOY: Descodificador access none of the IA peers have, backed by a
 //                          valid CISO-approved ticket. The agent should propose KEEP.
 //
 // Everything is deterministic so the demo plays the same way every time.
@@ -30,7 +29,6 @@ import type {
   Membership,
   Person,
   ServiceAccount,
-  SodRule,
 } from "./types.js";
 
 const AS_OF = "2026-11-26";
@@ -48,8 +46,8 @@ const entitlements: Entitlement[] = [
   { id: "ent-vpn-lab", system: "VPN", name: "VPN Laboratorio", description: "Túnel VPN privilegiado a las redes del laboratorio de I+D", risk: "high", physical: false },
   { id: "ent-vpn-full", system: "VPN", name: "VPN Full", description: "Túnel VPN de administración sin restricciones a toda la red", risk: "high", physical: false },
 
-  { id: "ent-firebase", system: "Firebase", name: "Firebase", description: "Consola de Firebase y control de la base de datos de producción", risk: "high", physical: false, duties: ["prod_data_admin"] },
-  { id: "ent-azure", system: "Azure", name: "Azure", description: "Suscripciones de Azure, facturación y administración de IAM", risk: "high", physical: false, duties: ["cloud_iam_admin"] },
+  { id: "ent-firebase", system: "Firebase", name: "Firebase", description: "Consola de Firebase y control de la base de datos de producción", risk: "high", physical: false },
+  { id: "ent-azure", system: "Azure", name: "Azure", description: "Suscripciones de Azure, facturación y administración de IAM", risk: "high", physical: false },
   { id: "ent-descodificador-demo", system: "Dispositivo", name: "Descodificador", description: "Descodificador para entornos de pruebas", risk: "high", physical: true },
 ];
 
@@ -85,7 +83,7 @@ const departmentGroup: Partial<Record<Department, string>> = {
 
 // `gh` is the person's public GitHub login: it gives the photo and a reserved-domain email.
 // Roles, departments and dates are invented. People without `gh` are fictional.
-type Seed = Omit<Person, "email" | "status" | "homeOffice" | "avatarUrl"> & Partial<Pick<Person, "status" | "homeOffice">> & { gh?: string };
+type Seed = Omit<Person, "email" | "status" | "homeOffice" | "avatarUrl"> & Partial<Pick<Person, "status" | "homeOffice" | "avatarUrl">> & { gh?: string };
 
 const seeds: Seed[] = [
   // Heads (3) — Ingeniería, IA and Innovación
@@ -117,7 +115,7 @@ const seeds: Seed[] = [
 
   // TI: Maricruz heads it; her team is Sergio Jaramillo, Felipe, Patricia (transferred Marketing → Diseño) and Gonzalo.
   { id: "p-050", gh: "sjaram93", name: "Sergio Jaramillo", department: "TI", title: "Administración de sistemas", managerId: "p-051", startDate: "2019-07-15" },
-  { id: "p-051", name: "Maricruz", department: "TI", title: "Responsable de TI", startDate: "2021-03-08" },
+  { id: "p-051", name: "Maricruz", department: "TI", title: "Responsable de TI", startDate: "2021-03-08", avatarUrl: "/avatars/maricruz.jpg" },
   { id: "p-052", gh: "felipesotoca", name: "Felipe Sotoca Barroso", department: "Marketing", title: "Responsable de contenidos", managerId: "p-051", startDate: "2021-08-23" },
   { id: "p-053", gh: "PatriRoman", name: "Patricia Román Castro", department: "Diseño", title: "Diseño de marca", managerId: "p-051", startDate: "2020-06-01" },
   { id: "p-054", gh: "gonsalcedo", name: "Gonzalo Salcedo", department: "Diseño", title: "Diseño de producto", managerId: "p-051", startDate: "2023-02-13" },
@@ -125,10 +123,10 @@ const seeds: Seed[] = [
 
 const plain = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-const people: Person[] = seeds.map(({ gh, ...s }) => ({
+const people: Person[] = seeds.map(({ gh, avatarUrl, ...s }) => ({
   ...s,
   email: `${gh?.toLowerCase() ?? plain(s.name).replace(/\s+/g, ".")}@telefonica.example`,
-  ...(gh ? { avatarUrl: `https://github.com/${gh}.png?size=96` } : {}),
+  ...(avatarUrl ? { avatarUrl } : gh ? { avatarUrl: `https://github.com/${gh}.png?size=96` } : {}),
   status: s.status ?? "active",
   homeOffice: s.homeOffice ?? "Sede de Madrid",
 }));
@@ -168,10 +166,7 @@ for (const id of ["p-050", "p-051"]) {
 grant("p-053", "g-mkt-staff", "2020-06-01");
 grant("p-053", "g-mkt-firebase", "2021-01-11", "TCK-2021-0007");
 
-// Case 2 — Daniel Nieto: holds Firebase (via Plataforma de Ingeniería) AND Azure (temporary cover expired).
-grant("p-010", "g-eng-cloud", "2025-08-01", "TCK-2025-0318");
-
-// Case 4 (decoy) — Marcos Barba: IA engineer with Descodificador access approved by CISO.
+// Case 3 (decoy) — Marcos Barba: IA engineer with Descodificador access approved by CISO.
 grant("p-020", "g-demo-lab", "2026-04-15", "TCK-2026-0412");
 
 grant("svc-ci-runner", "g-eng-staff", "2022-05-10");
@@ -194,16 +189,6 @@ const tickets: AccessTicket[] = [
     approvedBy: "p-051",
     justification: "Analítica de campañas: necesita Firebase para medir las conversiones de Marketing.",
     approvedDate: "2021-01-11",
-  },
-  {
-    id: "TCK-2025-0318",
-    principalId: "p-010",
-    entitlementId: "ent-azure",
-    requestedBy: "p-001",
-    approvedBy: "p-001",
-    justification: "Temporal: cubrir la administración de Azure de Ingeniería mientras la persona responsable está ausente durante un periodo prolongado.",
-    approvedDate: "2025-08-01",
-    expiresDate: "2025-09-30",
   },
   {
     id: "TCK-2026-0412",
@@ -233,7 +218,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 for (const p of people.filter((x) => x.status === "active")) {
   for (const day of workdays) {
     if (rand() < 0.2) continue;
-    if (p.id === "p-060" && day === "2026-11-24") continue; // Case 3 sets this morning explicitly
+    if (p.id === "p-060" && day === "2026-11-24") continue; // Case 2 sets this morning explicitly
     const h = 8 + Math.floor(rand() * 2);
     const m = Math.floor(rand() * 60);
     badgeEvents.push({ personId: p.id, doorEntitlementId: "ent-movil-trabajo", time: `${day}T${pad(h)}:${pad(m)}:00+01:00`, ...MADRID, result: "granted" });
@@ -247,20 +232,9 @@ for (const p of people.filter((x) => x.status === "active")) {
 badgeEvents.push({ personId: "p-050", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-19T11:05:00+01:00", ...MADRID, result: "granted" });
 badgeEvents.push({ personId: "p-020", doorEntitlementId: "ent-descodificador-demo", time: "2026-11-21T03:12:00+01:00", ...MADRID, result: "granted" });
 
-// Case 3 — Carlos Nieto: Móvil Trabajo check-in in Madrid at 09:12, VPN General login from Lagos at 09:31.
+// Case 2 — Carlos Nieto: Móvil Trabajo check-in in Madrid at 09:12, VPN General login from Lagos at 09:31.
 badgeEvents.push({ personId: "p-060", doorEntitlementId: "ent-movil-trabajo", time: "2026-11-24T09:12:00+01:00", ...MADRID, result: "granted" });
 loginEvents.push({ principalId: "p-060", system: "VPN General", time: "2026-11-24T09:31:00+01:00", city: "Lagos", country: "Nigeria", ip: "102.89.34.120" });
-
-// ---------------------------------------------------------------- separation of duties
-
-const sodRules: SodRule[] = [
-  {
-    id: "sod-firebase-azure",
-    name: "Administración de Firebase + Azure",
-    duties: ["prod_data_admin", "cloud_iam_admin"],
-    why: "Una persona con control de Firebase en producción y administración de IAM en Azure podría alterar datos reales y ocultar los registros de auditoría de la nube.",
-  },
-];
 
 export const company: Company = {
   name: "FCYBERL",
@@ -275,5 +249,4 @@ export const company: Company = {
   tickets,
   badgeEvents,
   loginEvents,
-  sodRules,
 };

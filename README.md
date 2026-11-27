@@ -1,10 +1,10 @@
-# AccessHound
+# Mi Portero
 
 > BloodHound-style risk analysis for physical and digital access. Maps who can reach what, and an AI agent explains each risk so humans can review and revoke it.
 
 Every company hands out hundreds of keys: app accounts, admin groups, VPN access, badges that open doors. Nobody keeps track of who still has which ones. People change roles and keep their old access, leavers' badges still open the server room, and service accounts outlive their owners.
 
-BloodHound shows attack paths in Active Directory. **AccessHound** maps all access, digital and physical, in one graph, and gives it to an agent that does the review.
+BloodHound shows attack paths in Active Directory. **Mi Portero** maps all access, digital and physical, in one graph, and gives it to an agent that does the review.
 
 **The agent investigates and recommends; a person always decides.**
 
@@ -36,17 +36,16 @@ The UI has four tabs: **Mapa de riesgo**, **Hallazgos**, **Registro** and **Moni
 
 ## Demo scenario
 
-A fake company, FCYBERL, built from the Future Cybersecurity Lab team: 24 people (real GitHub names and photos, invented roles) and 1 service account. The UI and the agent's output are in Spanish. There are 3 planted access problems:
+A fake company, FCYBERL, built from the Future Cybersecurity Lab team: 24 people (real GitHub names and photos, invented roles) and 1 service account. The UI and the agent's output are in Spanish. There are 2 planted access problems:
 
 | # | Problem | What gives it away |
 |---|---------|--------------------|
 | 1 | Role-change leftover | Patricia moved from Marketing to Design and still has Marketing's VPN DEMO and Firebase |
-| 2 | Toxic combination | Daniel has Firebase and Azure admin; the Azure access came from a temporary ticket that expired |
-| 3 | Impossible travel | Carlos's phone registered in Madrid, and 19 minutes later their VPN login came from Lagos |
+| 2 | Impossible travel | Carlos's phone registered in Madrid, and 19 minutes later their VPN login came from Lagos |
 
-The 5-minute demo runs on that data end to end ([docs/DEMO.md](docs/DEMO.md)). AccessHound maps the access and flags the problems. The agent investigates each one and explains it. A person approves or rejects each proposal, the audit trail fills in, and the risk map calms down.
+The 5-minute demo runs on that data end to end ([docs/DEMO.md](docs/DEMO.md)). Mi Portero maps the access and flags the problems. The agent investigates each one and explains it. A person approves or rejects each proposal, the audit trail fills in, and the risk map calms down.
 
-There is also a fourth, decoy case: Marcos, on the AI team, is the only one with a Descodificador DEMO. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
+There is also a third, decoy case: Marcos, on the AI team, is the only one with a Descodificador DEMO. A valid ticket approved by the CISO backs it, so the agent should propose **keep**. This shows the agent checks before it accuses anyone.
 
 ## Architecture
 

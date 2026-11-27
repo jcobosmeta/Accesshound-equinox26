@@ -123,29 +123,6 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
       };
     }
 
-    case "toxic_combination": {
-      await run([
-        { say: `Compruebo cómo consiguió ${first} acceso a Firebase y a Azure a la vez.`, call: ["list_access", { principal_id: pid }] },
-        { say: "¿Hay un ticket válido para el acceso a Azure?", call: ["get_access_tickets", { principal_id: pid, entitlement_id: "ent-azure" }] },
-        { say: `¿Quién más en ${repo.person(pid)!.department} tiene acceso a Azure?`, call: ["compare_with_peers", { person_id: pid, entitlement_id: "ent-azure" }] },
-      ]);
-      const ticket = repo.ticketsFor(pid, "ent-azure")[0];
-      const azureGroup = repo.group(ticket ? repo.membershipsOf(pid).find((m) => m.ticketId === ticket.id)!.groupId : "")!;
-      const firebaseGroup = access.find((a) => a.entitlement.id === "ent-firebase")!.group;
-      return {
-        decision: "revoke",
-        headline: `${first} tiene acceso de administración a Firebase y a Azure: la cobertura temporal caducó el ${ticket?.expiresDate}.`,
-        explanation: `${name} trabaja en ${repo.person(pid)!.department} (${repo.person(pid)!.title.toLowerCase()}) y usa Firebase en su trabajo. El acceso a Azure se añadió el ${ticket?.approvedDate} para cubrir una ausencia en el equipo y debía terminar el ${ticket?.expiresDate}, pero nunca se revocó. Tener Firebase y Azure a la vez incumple la segregación de funciones. Quita ${azureGroup.name} y mantén el acceso habitual de ${first} a Firebase.`,
-        evidence: [
-          `Firebase a través de ${firebaseGroup.name} (normal para su puesto).`,
-          `Azure a través de ${azureGroup.name} desde el ${ticket?.approvedDate}.`,
-          `Ticket ${ticket?.id}: «${ticket?.justification}». Caducó el ${ticket?.expiresDate}.`,
-        ],
-        actions: [{ kind: "remove_from_group", target: azureGroup.id, reason: "La cobertura temporal de Azure ha caducado; incumple la segregación de funciones con Firebase." }],
-        confidence: "high",
-      };
-    }
-
     case "impossible_travel": {
       const login = repo.loginEvents(pid).find((l) => l.country !== "España")!;
       await run([

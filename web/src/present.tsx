@@ -7,7 +7,6 @@ import IconDeviceSignalRegular from "@telefonica/mistica-icons/icon-device-signa
 import IconExchangeRegular from "@telefonica/mistica-icons/icon-exchange-regular";
 import IconGroupRegular from "@telefonica/mistica-icons/icon-group-regular";
 import IconKeyRegular from "@telefonica/mistica-icons/icon-key-regular";
-import IconLinkRegular from "@telefonica/mistica-icons/icon-link-regular";
 import IconLogoutRegular from "@telefonica/mistica-icons/icon-logout-regular";
 import IconPlaneRegular from "@telefonica/mistica-icons/icon-plane-regular";
 import IconRobotRegular from "@telefonica/mistica-icons/icon-robot-regular";
@@ -19,7 +18,6 @@ export const findingTypes: Record<FindingType, { label: string; Icon: IconCompon
   leaver_access: { label: "Baja con accesos", Icon: IconLogoutRegular },
   orphaned_service_account: { label: "Cuenta de servicio huérfana", Icon: IconRobotRegular },
   role_change_leftover: { label: "Restos de un cambio de puesto", Icon: IconExchangeRegular },
-  toxic_combination: { label: "Combinación tóxica", Icon: IconLinkRegular },
   impossible_travel: { label: "Viaje imposible", Icon: IconPlaneRegular },
   peer_outlier: { label: "Anomalía frente a compañeros", Icon: IconGroupRegular },
 };
@@ -31,16 +29,28 @@ export const riskColors: Record<Risk, { strong: string; low: string }> = {
   low: { strong: skinVars.colors.neutralMedium, low: skinVars.colors.neutralLow },
 };
 
+export type ScorePalette = Record<RiskLevel, { stroke: string; bg: string; border: string; text: string; label: string }>;
+export type DepartmentAccentMap = Record<string, { bg: string; border: string; text: string }>;
+
 /** Luminous dark-mode palette for 0–100% risk score rings, badges, and map highlights. */
-export const scorePalette: Record<RiskLevel, { stroke: string; bg: string; border: string; text: string; label: string }> = {
+export const scorePalette: ScorePalette = {
   critical: { stroke: "#FF4D5E", bg: "#2B1118", border: "#EF4444", text: "#FF8592", label: "Riesgo crítico" },
   high: { stroke: "#FF7A33", bg: "#2B170D", border: "#F97316", text: "#FFA370", label: "Riesgo alto" },
   medium: { stroke: "#FBBF24", bg: "#291F09", border: "#F59E0B", text: "#FCD34D", label: "Riesgo elevado" },
   low: { stroke: "#34D399", bg: "#0D241C", border: "#10B981", text: "#6EE7B7", label: "Riesgo bajo" },
 };
 
+const scorePaletteLight: ScorePalette = {
+  critical: { stroke: "#DC2626", bg: "#FEF2F2", border: "#EF4444", text: "#B91C1C", label: "Riesgo crítico" },
+  high: { stroke: "#EA580C", bg: "#FFF7ED", border: "#F97316", text: "#C2410C", label: "Riesgo alto" },
+  medium: { stroke: "#D97706", bg: "#FFFBEB", border: "#F59E0B", text: "#B45309", label: "Riesgo elevado" },
+  low: { stroke: "#059669", bg: "#ECFDF5", border: "#10B981", text: "#047857", label: "Riesgo bajo" },
+};
+
+export const getScorePalette = (isDarkMode: boolean): ScorePalette => (isDarkMode ? scorePalette : scorePaletteLight);
+
 /** Dark-mode accent per department so map quadrants and hierarchy columns stay scannable. */
-export const departmentAccent: Record<string, { bg: string; border: string; text: string }> = {
+export const departmentAccent: DepartmentAccentMap = {
   Innovación: { bg: "#10213D", border: "#1D4ED8", text: "#60A5FA" },
   Diseño: { bg: "#1F1A33", border: "#7C3AED", text: "#C4B5FD" },
   IA: { bg: "#22150A", border: "#C2410C", text: "#FB923C" },
@@ -50,6 +60,20 @@ export const departmentAccent: Record<string, { bg: string; border: string; text
   Ingeniería: { bg: "#0D2632", border: "#0E7490", text: "#22D3EE" },
   Dirección: { bg: "#0E1F3D", border: "#2563EB", text: "#38BDF8" },
 };
+
+const departmentAccentLight: DepartmentAccentMap = {
+  Innovación: { bg: "#EFF6FF", border: "#3B82F6", text: "#1D4ED8" },
+  Diseño: { bg: "#F5F3FF", border: "#8B5CF6", text: "#6D28D9" },
+  IA: { bg: "#FFF7ED", border: "#EA580C", text: "#C2410C" },
+  Transversal: { bg: "#F1F5F9", border: "#64748B", text: "#334155" },
+  Marketing: { bg: "#FDF2F8", border: "#DB2777", text: "#BE185D" },
+  TI: { bg: "#F5F3FF", border: "#7C3AED", text: "#5B21B6" },
+  Ingeniería: { bg: "#ECFEFF", border: "#0891B2", text: "#0E7490" },
+  Dirección: { bg: "#EFF6FF", border: "#2563EB", text: "#1E40AF" },
+};
+
+export const getDepartmentAccent = (isDarkMode: boolean): DepartmentAccentMap =>
+  isDarkMode ? departmentAccent : departmentAccentLight;
 
 const severityTag: Record<Risk, { type: "error" | "warning" | "inactive"; text: string }> = {
   high: { type: "error", text: "Alta" },
@@ -87,7 +111,17 @@ export const DecisionTag = ({ decision }: { decision: Proposal["decision"] }) =>
 );
 
 export const ModeTag = ({ mode }: { mode: AgentMode }) =>
-  mode === "live" ? <Tag type="active">Agente en vivo</Tag> : <Tag type="promo">Agente en reproducción</Tag>;
+  mode === "live" ? <Tag type="active">Agente en vivo</Tag> : (
+    <span
+      style={{
+        display: "inline-flex",
+        borderRadius: skinVars.borderRadii.tag,
+        border: `1px solid ${skinVars.colors.successHigh}`,
+      }}
+    >
+      <Tag type="success">Agente en ejecución</Tag>
+    </span>
+  );
 
 export const groupSourceIcon: Record<AccessPath["group"]["source"], IconComponent> = {
   "Active Directory": IconBuildingTreeRegular,

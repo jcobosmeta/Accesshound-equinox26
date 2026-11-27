@@ -244,5 +244,5 @@ if (existsSync(webDist)) {
 }
 
 app.listen(PORT, () => {
-  console.log(`AccessHound API on http://localhost:${PORT} (agent mode: ${defaultMode})`);
+  console.log(`Mi Portero API on http://localhost:${PORT} (agent mode: ${defaultMode})`);
 });

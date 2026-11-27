@@ -1,6 +1,6 @@
-import { Box, Inline, ResponsiveLayout, SkeletonLine, Stack, Text1, Text2, Text5, Title3, skinVars } from "@telefonica/mistica";
+import { Box, Inline, ResponsiveLayout, SkeletonLine, Stack, Text1, Text2, Text5, Title3, skinVars, useTheme } from "@telefonica/mistica";
 import type { Finding, OrgGraph, Summary } from "../api";
-import { formatDate, scorePalette } from "../present";
+import { formatDate, getScorePalette } from "../present";
 
 const Stat = ({ value, label, color }: { value: number | string; label: string; color?: string }) => (
   <Stack space={2}>
@@ -13,18 +13,20 @@ const Stat = ({ value, label, color }: { value: number | string; label: string; 
 
 /** Company snapshot on the left, live risk and finding counts on the right. */
 export function SummaryBand({ summary, findings, graph }: { summary?: Summary; findings?: Finding[]; graph?: OrgGraph }) {
+  const { isDarkMode } = useTheme();
+  const palette = getScorePalette(isDarkMode);
   const count = (pred: (f: Finding) => boolean) => findings?.filter(pred).length ?? 0;
   const toReview = count((f) => f.status === "open" || f.status === "investigating");
   const needsDecision = count((f) => f.status === "proposed");
   const decided = count((f) => f.status === "approved" || f.status === "rejected" || f.status === "resolved");
   const maxRiskColor =
     graph && graph.maxRisk >= 80
-      ? scorePalette.critical.stroke
+      ? palette.critical.stroke
       : graph && graph.maxRisk >= 60
-        ? scorePalette.high.stroke
+        ? palette.high.stroke
         : graph && graph.maxRisk >= 35
-          ? scorePalette.medium.stroke
-          : scorePalette.low.stroke;
+          ? palette.medium.stroke
+          : palette.low.stroke;
 
   return (
     <ResponsiveLayout variant="alternative" fullWidth>

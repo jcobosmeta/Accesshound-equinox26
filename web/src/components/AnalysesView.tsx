@@ -193,7 +193,7 @@ export function AnalysesView({
     return (
       <EmptyStateCard
         asset={<IconErrorRegular size="100%" color={skinVars.colors.error} />}
-        title="No se puede conectar con la API de AccessHound"
+        title="No se puede conectar con la API de Mi Portero"
         description={`${error}. ¿Está el servidor en marcha en el puerto 8787?`}
         button={
           <ButtonPrimary small onPress={onRetry}>

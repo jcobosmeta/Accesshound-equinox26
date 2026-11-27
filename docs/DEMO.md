@@ -1,4 +1,4 @@
-# AccessHound demo run sheet
+# Mi Portero demo run sheet
 
 A 5-minute demo: the risk map, three cases end to end, the audit trail, then back to the risk map to show it calmer. Stage directions are in English; what to say is in Spanish, like the app. Live investigations take 7–17 seconds each.
 
@@ -21,9 +21,9 @@ Do these 15 minutes before, on the machine you present from.
 
 | Time | What you click | What you say |
 |---|---|---|
-| **0:00** | Nothing. Show the **Mapa de riesgo**. | «Toda empresa reparte cientos de llaves: cuentas, grupos de administración, VPN, dispositivos. Nadie controla quién sigue teniendo cuáles. AccessHound lo pone todo en un mismo mapa, unas reglas señalan lo que no encaja y un agente de IA lo investiga para que una persona decida.» |
+| **0:00** | Nothing. Show the **Mapa de riesgo**. | «Toda empresa reparte cientos de llaves: cuentas, grupos de administración, VPN, dispositivos. Nadie controla quién sigue teniendo cuáles. Mi Portero lo pone todo en un mismo mapa, unas reglas señalan lo que no encaja y un agente de IA lo investiga para que una persona decida.» |
 | **0:25** | Point at the map, then at **Carlos Nieto (98%)**. | «Cada círculo es una persona o cuenta de FCYBERL, con su riesgo. Media del 12 %, y alguien al 98 %.» |
-| **0:40** | **Hallazgos**, then **Empezar análisis**, then **Investigar todos (4)**. | «Las reglas han encontrado cuatro problemas. Lanzo el agente sobre los cuatro a la vez.» |
+| **0:40** | **Hallazgos**, then **Empezar análisis**, then **Investigar todos (3)**. | «Las reglas han encontrado tres problemas. Lanzo el agente sobre los tres a la vez.» |
 | **0:55** | Open **Patricia Román Castro**'s row. Point at the red paths in **Mapa de accesos**. | «Patricia pasó de Marketing a Diseño en marzo. En rojo, lo que ha señalado la regla: sigue teniendo VPN DEMO y Firebase de Marketing.» Read one of the agent's notes aloud as it appears. |
 | **1:20** | Point at the proposal card. | «Recomienda **revocar**. Fijaos en las pruebas: su ticket de Firebase se aprobó para analítica de campañas en Marketing, un puesto que ya no tiene, y nadie en Diseño tiene ese acceso.» |
 | **1:40** | Click **Aprobar y revocar**. Point at the map. | «Decide una persona, no la IA. Al aprobar, el cambio se aplica: esos caminos quedan revocados. Su acceso general se mantiene.» |
@@ -32,7 +32,6 @@ Do these 15 minutes before, on the machine you present from.
 | **2:45** | Open **Marcos Barba Ballarín**'s row. | «Marcos es la única persona de IA con un Descodificador DEMO. Una herramienta ingenua diría “revocar”.» |
 | **3:05** | Point at **Mantener**, then click **Aprobar: mantener el acceso**. | «El agente ha encontrado un ticket aprobado por el CISO para las pruebas de modelos sobre dispositivos DEMO, vigente hasta marzo de 2027. Recomienda **mantener**: comprueba antes de acusar. No cambia nada, pero queda registrado.» |
 | **3:30** | **Auditoría**, then **Descargar CSV**. | «Cada decisión: qué propuso el agente, quién lo aprobó y qué cambió realmente. Es la evidencia que pide una auditoría de NIS2, y aquí está como archivo para entregar.» |
-| **3:55** | **Hallazgos**. Point at the one you didn't open. | «También ha encontrado a Daniel Nieto con Firebase y un Azure temporal que caducó hace más de un año: una combinación que rompe la segregación de funciones.» |
 | **4:20** | **Mapa de riesgo**. Point at Carlos, Patricia and Marcos. | «Y el mapa se ha calmado: Carlos, Patricia y Marcos han bajado, porque su acceso ya está revisado y justificado.» |
 | **4:45** | Nothing. | «Las reglas deciden qué no encaja, así que no se escapa nada. La IA investiga y explica. Y siempre decide una persona.» |
 
@@ -48,7 +47,7 @@ Do these 15 minutes before, on the machine you present from.
 | The agent takes more than 30 seconds | Keep talking over its notes, or open another finding and come back; the investigation keeps running. |
 | You approved the wrong thing | **Restablecer** (top right), then **Restablecer** in the dialog. It restores all data and clears the analyses and the audit trail. Redo the case you were on. |
 | A section shows "No se puede…" | Click **Reintentar**, or open another finding. |
-| The whole page shows **AccessHound ha tenido un problema** | Click **Recargar**. The data lives on the server, so nothing is lost. |
+| The whole page shows **Mi Portero ha tenido un problema** | Click **Recargar**. The data lives on the server, so nothing is lost. |
 | The network or gateway is down | Set `AGENT_MODE=replay` in `server/.env` and restart `npm start`. Everything works offline, with the header saying **Agente en reproducción**. |
 
 ## Likely questions

@@ -129,7 +129,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
   const principalNodeId = `p:${detail.profile.id}`;
 
   // Build nodes and edges. Paths that lead to flagged access sort to the top.
-  const { groups, ents, edges, hiddenCount } = React.useMemo(() => {
+  const { groups, ents, blocks, edges, hiddenCount } = React.useMemo(() => {
     const live = detail.access.map((a) => ({ a, removed: false }));
     const gone = removed.map((a) => ({ a, removed: true }));
     let paths = [...live, ...gone];
@@ -175,7 +175,13 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
         });
       }
     });
-    return { groups: [...groups.values()], ents: entList, edges, hiddenCount: total - entList.length };
+    // Each group sits beside the block of entitlements it is the first to grant, so its connectors
+    // fan out symmetrically instead of every group bunching up in the middle of a tall column.
+    const blocks = groupOrder.map((gid, i) => ({
+      group: groups.get(gid)!,
+      ents: entList.filter((e) => firstGroup(e.id) === i),
+    }));
+    return { groups: [...groups.values()], ents: entList, blocks, edges, hiddenCount: total - entList.length };
   }, [detail, removed, flaggedSet, flaggedOnly, principalNodeId]);
 
   // Hovering a node lights up every path through it and fades the rest.
@@ -342,6 +348,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
                   display: "grid",
                   gridTemplateColumns: COLUMNS,
                   columnGap: COLUMN_GAP,
+                  rowGap: 8,
                   alignItems: "center",
                 }}
               >
@@ -384,8 +391,8 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
                   </svg>
                 )}
 
-                {/* Column 1: the principal */}
-                <div>
+                {/* Column 1: the principal, spanning every row */}
+                <div style={{ gridColumn: 1, gridRow: `1 / span ${blocks.reduce((n, b) => n + Math.max(1, b.ents.length), 0)}` }}>
                   <Node
                     id={principalNodeId}
                     state="normal"
@@ -403,11 +410,25 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
                   />
                 </div>
 
-                {/* Column 2: groups */}
-                <Stack space={8}>{groups.map(groupNode)}</Stack>
-
-                {/* Column 3: entitlements */}
-                <Stack space={8}>{ents.map(entNode)}</Stack>
+                {/* Columns 2 and 3: each group beside the entitlements it grants first */}
+                {(() => {
+                  let row = 1;
+                  return blocks.flatMap(({ group, ents: owned }) => {
+                    const span = Math.max(1, owned.length);
+                    const start = row;
+                    row += span;
+                    return [
+                      <div key={`gc:${group.id}`} style={{ gridColumn: 2, gridRow: `${start} / span ${span}` }}>
+                        {groupNode(group)}
+                      </div>,
+                      ...owned.map((e, k) => (
+                        <div key={`ec:${e.id}`} style={{ gridColumn: 3, gridRow: start + k }}>
+                          {entNode(e)}
+                        </div>
+                      )),
+                    ];
+                  });
+                })()}
               </div>
             </>
           )}
