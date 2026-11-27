@@ -20,7 +20,7 @@ import * as React from "react";
 import type { AuditEntry, Finding, Proposal } from "../api";
 import { DecisionTag, ModeTag, formatTime } from "../present";
 
-const REVIEWER_KEY = "accesshound.reviewer";
+const REVIEWER_KEY = "mi-portero.reviewer";
 
 function describeAction(action: Proposal["actions"][number], principalName: string, groupNames: Map<string, string>) {
   switch (action.kind) {
