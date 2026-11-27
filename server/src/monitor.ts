@@ -121,7 +121,7 @@ export const ALERT_TEMPLATES: Record<AlertKind, AlertTemplate> = {
     title: "Viaje imposible",
     people: true,
     services: false,
-    detail: () => `Inicio de sesión VPN desde ${pick(["Lagos (Nigeria)", "Bucarest (Rumanía)", "Hanói (Vietnam)", "Caracas (Venezuela)"])} 35 min después de un acceso desde Madrid. IP ${ip()}.`,
+    detail: () => `Inicio de sesión VPN desde ${pick(["Kuala Lumpur (Malasia)", "Bucarest (Rumanía)", "Hanói (Vietnam)", "Caracas (Venezuela)"])} 35 min después de un acceso desde Madrid. IP ${ip()}.`,
   },
   mass_download: {
     source: "DLP",
@@ -353,7 +353,9 @@ const HISTORY: {
     reason: "Clonado fuera de horario poco después de estrenar dispositivo. Puede ser legítimo, pero queda en revisión hasta que lo confirme su responsable.",
   },
   {
-    principalId: "p-060",
+    // Not Carlos (p-060): his impossible travel is an audit case, and a block here would show up in the
+    // audit (access removed, risk lowered) before monitoring is introduced in the demo.
+    principalId: "p-040",
     kind: "mass_download",
     daysAgo: 1,
     at: "20:14",

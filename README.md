@@ -43,7 +43,7 @@ A fake company, FCYBERL, built from the Future Cybersecurity Lab team: 24 people
 | # | Problem | What gives it away |
 |---|---------|--------------------|
 | 1 | Role-change leftover | Patricia moved from Marketing to Design and still has Marketing's VPN DEMO and Firebase |
-| 2 | Impossible travel | On 8 Sep, Carlos's phone registered in Madrid, and 19 minutes later their VPN login came from Lagos; nobody noticed for eleven weeks |
+| 2 | Impossible travel | On 8 Sep, Carlos's phone registered in Madrid, and 19 minutes later their VPN login came from Kuala Lumpur, Malaysia; nobody noticed for eleven weeks |
 
 The 5-minute demo runs on that data end to end ([docs/DEMO.md](docs/DEMO.md)). Mi Portero maps the access and flags the problems. The agent investigates each one and explains it. A person approves or rejects each proposal, the audit trail fills in, and the risk map calms down.
 

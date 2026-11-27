@@ -64,9 +64,36 @@ app.get("/api/principals/:id", (req, res) => {
         .map((s) => ({ id: s.id, name: s.name, description: s.description }))
     : [];
 
+  // A monitoring block removes every membership but keeps them so it can be undone. Return those
+  // paths too, so the access map shows what the person had instead of an empty map.
+  const block = monitor.blocked.get(id);
+  const blocked = block
+    ? {
+        at: block.at,
+        reason: block.reason,
+        access: block.memberships.flatMap((m) => {
+          const g = repo.group(m.groupId);
+          if (!g) return [];
+          return g.entitlementIds.flatMap((eid) => {
+            const entitlement = repo.entitlement(eid);
+            if (!entitlement) return [];
+            return [
+              {
+                entitlement,
+                group: { id: g.id, name: g.name, source: g.source },
+                granted: m.grantedDate,
+                ticketId: m.ticketId ?? null,
+              },
+            ];
+          });
+        }),
+      }
+    : null;
+
   res.json({
     kind,
     profile: person ?? service,
+    blocked,
     risk: computePrincipalRisk(repo, id, store.findings()),
     access: repo.accessOf(id).map((a) => ({
       entitlement: a.entitlement,

@@ -139,7 +139,11 @@ async function script(repo: Repo, f: Finding, run: (s: Step[]) => Promise<void>,
         evidence: [`Móvil Trabajo: ${badge.time} en ${badge.site}.`, `${login.system}: ${login.time} desde ${login.city}, ${login.country} (IP ${login.ip}).`, "No consta ningún viaje; su oficina es la sede de Madrid."],
         actions: [
           { kind: "reset_credentials", target: pid, reason: "Credenciales de VPN General probablemente comprometidas." },
-          { kind: "open_incident", target: pid, reason: "Viaje imposible entre el registro del Móvil Trabajo en Madrid y el inicio de sesión en VPN General desde Lagos." },
+          {
+            kind: "open_incident",
+            target: pid,
+            reason: `Viaje imposible entre el registro del Móvil Trabajo en Madrid y el inicio de sesión en ${login.system} desde ${login.city}, ${login.country}.`,
+          },
         ],
         confidence: "medium",
       };

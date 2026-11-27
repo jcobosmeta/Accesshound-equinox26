@@ -8,7 +8,9 @@ import * as React from "react";
 import type { AccessPath, PrincipalDetail } from "../api";
 import { entitlementIcon, groupSourceIcon, initials } from "../present";
 
-type NodeState = "normal" | "flagged" | "removed" | "dimmed";
+/** removed: revoked by an approved decision; blocked: taken away by a monitoring block that can be undone. */
+type NodeState = "normal" | "flagged" | "removed" | "blocked" | "dimmed";
+type Gone = "removed" | "blocked";
 
 interface GroupNode {
   id: string;
@@ -56,12 +58,23 @@ const serviceIconPng: Record<string, string> = {
 // The principal column holds one short box; give the width to groups and entitlements.
 const COLUMNS = "minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1.2fr)";
 
+// Every box gets a visible outline. The skin's `border` token is nearly invisible on the dark theme's
+// container background, so unflagged boxes use `borderHigh`; flagged ones stay red, blocked ones orange.
+const borderColor = (state: NodeState, hovered: boolean) =>
+  state === "flagged"
+    ? skinVars.colors.error
+    : state === "blocked"
+    ? skinVars.colors.warning
+    : hovered
+    ? skinVars.colors.brand
+    : skinVars.colors.borderHigh;
+
 const nodeStyle = (state: NodeState, hovered: boolean, fill: boolean): React.CSSProperties => ({
   position: "relative",
   borderRadius: skinVars.borderRadii.container,
-  border: `${state === "flagged" ? 2 : 1}px ${state === "removed" ? "dashed" : "solid"} ${
-    state === "flagged" ? skinVars.colors.error : hovered ? skinVars.colors.brand : skinVars.colors.border
-  }`,
+  border: `${state === "flagged" || state === "blocked" ? 2 : 1}px ${
+    state === "removed" || state === "blocked" ? "dashed" : "solid"
+  } ${borderColor(state, hovered)}`,
   background: state === "flagged" && fill ? skinVars.colors.errorLow : skinVars.colors.backgroundContainer,
   opacity: state === "dimmed" ? 0.45 : state === "removed" ? 0.7 : 1,
   transition: "opacity 120ms, border-color 120ms",
@@ -130,27 +143,29 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
 
   // Build nodes and edges. Paths that lead to flagged access sort to the top.
   const { groups, ents, blocks, edges, hiddenCount } = React.useMemo(() => {
-    const live = detail.access.map((a) => ({ a, removed: false }));
-    const gone = removed.map((a) => ({ a, removed: true }));
-    let paths = [...live, ...gone];
+    const live = detail.access.map((a) => ({ a, gone: undefined as Gone | undefined }));
+    const revoked = removed.map((a) => ({ a, gone: "removed" as Gone }));
+    const blockedPaths = (detail.blocked?.access ?? []).map((a) => ({ a, gone: "blocked" as Gone }));
+    let paths = [...live, ...revoked, ...blockedPaths];
     const groupIsFlagged = (gid: string) => paths.some((p) => p.a.group.id === gid && flaggedSet.has(p.a.entitlement.id));
     const total = new Set(paths.map((p) => p.a.entitlement.id)).size;
-    if (flaggedOnly) paths = paths.filter((p) => groupIsFlagged(p.a.group.id) || p.removed);
+    if (flaggedOnly) paths = paths.filter((p) => groupIsFlagged(p.a.group.id) || p.gone);
 
-    const rank = (p: (typeof paths)[number]) => (p.removed ? 0 : groupIsFlagged(p.a.group.id) ? 1 : 2);
+    const rank = (p: (typeof paths)[number]) => (p.gone ? 0 : groupIsFlagged(p.a.group.id) ? 1 : 2);
     paths.sort((x, y) => rank(x) - rank(y));
 
+    const isGone = (s: NodeState) => s === "removed" || s === "blocked";
     const groups = new Map<string, GroupNode>();
     const ents = new Map<string, EntNode>();
-    for (const { a, removed: isRemoved } of paths) {
+    for (const { a, gone } of paths) {
       const g = groups.get(a.group.id);
-      const gState: NodeState = isRemoved ? "removed" : groupIsFlagged(a.group.id) ? "flagged" : "normal";
+      const gState: NodeState = gone ?? (groupIsFlagged(a.group.id) ? "flagged" : "normal");
       if (!g) groups.set(a.group.id, { ...a.group, granted: a.granted, ticketId: a.ticketId, state: gState });
-      else if (g.state === "removed" && !isRemoved) g.state = gState;
+      else if (isGone(g.state) && !gone) g.state = gState;
       const e = ents.get(a.entitlement.id);
-      const eState: NodeState = isRemoved ? "removed" : flaggedSet.has(a.entitlement.id) ? "flagged" : "normal";
+      const eState: NodeState = gone ?? (flaggedSet.has(a.entitlement.id) ? "flagged" : "normal");
       if (!e) ents.set(a.entitlement.id, { id: a.entitlement.id, entitlement: a.entitlement, state: eState });
-      else if (e.state === "removed" && !isRemoved) e.state = eState;
+      else if (isGone(e.state) && !gone) e.state = eState;
     }
     // Sort entitlements by the first group that grants them, so connectors cross as little as possible.
     const groupOrder = [...groups.keys()];
@@ -163,10 +178,10 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
       const g = groups.get(gid)!;
       edges.push({ from: principalNodeId, to: `g:${gid}`, state: g.state, lane: 0 });
       const seen = new Set<string>();
-      for (const { a, removed: isRemoved } of paths) {
+      for (const { a, gone } of paths) {
         if (a.group.id !== gid || seen.has(a.entitlement.id)) continue;
         seen.add(a.entitlement.id);
-        const state: NodeState = isRemoved ? "removed" : flaggedSet.has(a.entitlement.id) ? "flagged" : "normal";
+        const state: NodeState = gone ?? (flaggedSet.has(a.entitlement.id) ? "flagged" : "normal");
         edges.push({
           from: `g:${gid}`,
           to: `e:${a.entitlement.id}`,
@@ -216,7 +231,13 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
   }, [groups, ents, isMobile]);
 
   const edgeColor = (e: Edge, active: boolean) =>
-    e.state === "flagged" ? skinVars.colors.error : active ? skinVars.colors.brand : skinVars.colors.neutralMedium;
+    e.state === "flagged"
+      ? skinVars.colors.error
+      : e.state === "blocked"
+      ? skinVars.colors.warning
+      : active
+      ? skinVars.colors.brand
+      : skinVars.colors.neutralMedium;
 
   const principalSubtitle =
     detail.kind === "person" ? `${detail.profile.title} · ${detail.profile.department}` : "Cuenta de servicio";
@@ -227,6 +248,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
     </Text1>
   );
   const flaggedCount = ents.filter((e) => e.state === "flagged").length;
+  const blockedCount = detail.blocked?.access.length ?? 0;
 
   const groupNode = (g: GroupNode) => {
     const Icon = groupSourceIcon[g.source];
@@ -243,6 +265,8 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
         subtitle={
           g.state === "removed"
             ? "Eliminado"
+            : g.state === "blocked"
+            ? `${sourceShort[g.source]} · bloqueado`
             : `${sourceShort[g.source]} · desde ${g.granted.slice(0, 4)}${g.ticketId ? ` · ${g.ticketId}` : ""}`
         }
       />
@@ -285,6 +309,10 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
         subtitle={
           state === "removed" ? (
             `${e.system} · revocado`
+          ) : state === "blocked" ? (
+            <Text1 as="span" medium color={skinVars.colors.warning}>
+              Bloqueado por monitorización
+            </Text1>
           ) : (
             <>
               {e.physical ? "Dispositivo" : e.system !== e.name ? e.system : "Servicio"}
@@ -310,9 +338,10 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
                 {`${detail.access.length} ${detail.access.length === 1 ? "vía de acceso" : "vías de acceso"}`}
                 {flaggedCount > 0 ? ` · ${flaggedCount} ${flaggedCount === 1 ? "señalada" : "señaladas"}` : ""}
                 {removed.length ? ` · ${removed.length} ${removed.length === 1 ? "revocada" : "revocadas"}` : ""}
+                {blockedCount ? ` · ${blockedCount} ${blockedCount === 1 ? "bloqueada" : "bloqueadas"} por monitorización` : ""}
               </Text1>
             </Inline>
-            {(flagged.length > 0 || removed.length > 0) && (
+            {(flagged.length > 0 || removed.length > 0 || blockedCount > 0) && (
               <Chip active={flaggedOnly} onPress={() => setFlaggedOnly((v) => !v)}>
                 {flaggedOnly && hiddenCount ? `Solo señalados (${hiddenCount} ocultos)` : "Solo señalados"}
               </Chip>
@@ -381,7 +410,7 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
                               style={{
                                 stroke: edgeColor(e, active),
                                 strokeWidth: e.state === "flagged" ? 2.5 : active ? 2 : 1.25,
-                                strokeDasharray: e.state === "removed" ? "5 4" : undefined,
+                                strokeDasharray: e.state === "removed" || e.state === "blocked" ? "5 4" : undefined,
                               }}
                             />
                             <circle cx={x2} cy={y2} r={3} style={{ fill: edgeColor(e, active) }} />
@@ -442,6 +471,11 @@ export function AccessGraph({ detail, removed, flagged }: Props) {
             {removed.length > 0 && (
               <Text1 regular color={skinVars.colors.textSecondary}>
                 Discontinuo: eliminado por una decisión aprobada
+              </Text1>
+            )}
+            {blockedCount > 0 && (
+              <Text1 regular color={skinVars.colors.textSecondary}>
+                Discontinuo en ámbar: bloqueado por monitorización; se puede deshacer
               </Text1>
             )}
             {!isMobile && (

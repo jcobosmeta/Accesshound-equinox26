@@ -35,13 +35,7 @@ export interface GraphNode {
   topFindingStatus?: FindingStatus;
 }
 
-export type GraphEdgeKind =
-  | "hierarchy"
-  | "owns"
-  | "cross_dept_access"
-  | "shared_privilege"
-  | "ticket_approval"
-  | "peer_mesh";
+export type GraphEdgeKind = "hierarchy" | "owns" | "cross_dept_access" | "shared_privilege" | "ticket_approval" | "peer_mesh";
 
 export interface GraphEdge {
   id: string;
@@ -204,6 +198,8 @@ export interface LoginEventItem {
 interface PrincipalExtras {
   risk: PrincipalRisk;
   access: AccessPath[];
+  /** Set while monitoring has blocked this principal: the access the block removed, kept so it can be undone. */
+  blocked: { at: string; reason: string; access: AccessPath[] } | null;
   relations: PrincipalRelations;
   hrHistory: HrEventItem[];
   tickets: AccessTicketItem[];
@@ -352,7 +348,8 @@ export const api = {
     alertTypes: () => request<AlertType[]>("/api/monitor/alert-types"),
     configure: (patch: Partial<MonitorConfig>) => post<MonitorConfig>("/api/monitor/config", patch),
     sendAlert: (principalId: string, kind: AlertKind) => post<MonitorEvent>("/api/monitor/alerts", { principalId, kind }),
-    confirm: (alertId: string, accept: boolean) => post<MonitorEvent>(`/api/monitor/alerts/${encodeURIComponent(alertId)}/confirm`, { accept }),
+    confirm: (alertId: string, accept: boolean) =>
+      post<MonitorEvent>(`/api/monitor/alerts/${encodeURIComponent(alertId)}/confirm`, { accept }),
     unblock: (principalId: string) => post<BlockedPrincipal>(`/api/monitor/unblock/${encodeURIComponent(principalId)}`),
   },
 };
